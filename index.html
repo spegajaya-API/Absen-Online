@@ -3,78 +3,40 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Absensi & Rekap Presensi</title>
+  <title>Sistem Absensi Digital</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    body {
-      background-color: #f4f6f9;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    .card-custom {
-      background-color: #ffffff;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-      border: none;
-    }
-    .nav-pills .nav-link.active {
-      background-color: #0d6efd;
-    }
-    .loading-overlay {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(255, 255, 255, 0.85);
-      z-index: 9999;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-    }
-    
-    @media print {
-      .no-print {
-        display: none !important;
-      }
-      body {
-        background-color: #ffffff;
-      }
-      .container {
-        width: 100% !important;
-        max-width: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-      }
-      .card-print {
-        box-shadow: none !important;
-        border: none !important;
-      }
-    }
+    body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    .card-custom { background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); border: none; }
+    .btn-kelas { font-size: 1.2rem; font-weight: bold; padding: 15px 25px; border-radius: 10px; }
+    .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.85); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; }
+    @media print { .no-print { display: none !important; } body { background-color: #fff; } }
   </style>
 </head>
 <body>
 
-<!-- OVERLAY LOADING -->
 <div id="loading" class="loading-overlay">
   <div class="spinner-border text-primary" role="status"></div>
-  <span class="mt-2 fw-bold text-secondary" id="loadingText">Memproses data...</span>
+  <span class="mt-2 fw-bold text-secondary" id="loadingText">Memproses...</span>
 </div>
 
 <div class="container my-4">
 
-  <!-- NAVBAR / TAB NAVIGASI (NO-PRINT) -->
+  <!-- NAVBAR NAVIGASI -->
   <div class="d-flex justify-content-between align-items-center mb-4 no-print flex-wrap gap-2">
     <h3 class="fw-bold text-primary m-0">🏫 Sistem Absensi Digital</h3>
-    <ul class="nav nav-pills" id="mainTab" role="tablist">
-      <li class="nav-item" role="presentation">
-        <button class="nav-link active fw-bold" id="tab-absen" onclick="switchTab('absen')">📝 Input Absensi</button>
+    <ul class="nav nav-pills" id="mainTab">
+      <li class="nav-item">
+        <button class="nav-link active fw-bold" id="tab-absen" onclick="switchTab('absen')">📝 Absensi Kelas</button>
       </li>
-      <li class="nav-item" role="presentation">
+      <li class="nav-item">
         <button class="nav-link fw-bold" id="tab-rekap" onclick="switchTab('rekap')">📊 Rekap Data</button>
       </li>
     </ul>
   </div>
 
-  <!-- SETUP URL WEB APP APPS SCRIPT (NO-PRINT) -->
-  <div class="card card-custom p-3 mb-4 no-print bg-white border">
+  <!-- SETUP URL WEB APP -->
+  <div class="card card-custom p-3 mb-4 no-print border">
     <label class="form-label fw-bold text-secondary mb-1" style="font-size: 13px;">🔗 URL Web App Google Apps Script:</label>
     <div class="input-group input-group-sm">
       <input type="text" id="webAppUrl" class="form-control" placeholder="https://script.google.com/macros/s/AKfycbwrlB-R1zkZB1cXMFtSK7hY_vFpVFgYS8tMZFn1XDc5sDqiuFHjbuiJprC2vfsnwEaK/exec">
@@ -83,139 +45,96 @@
   </div>
 
   <!-- ========================================== -->
-  <!-- HALAMAN 1: FORM INPUT ABSENSI (DEFAULT)    -->
+  <!-- HALAMAN 1: ABSENSI KELAS & DAFTAR SISWA   -->
   <!-- ========================================== -->
-  <div id="page-absen" class="card card-custom p-4 mb-4">
-    <h4 class="fw-bold text-dark mb-3">Form Presensi Siswa</h4>
-    <hr class="mt-0 mb-4">
+  <div id="page-absen">
     
-    <form id="formAbsensi" onsubmit="submitAbsensi(event)">
-      <div class="row g-3">
-        <div class="col-md-6">
-          <label class="form-label fw-bold">Nama Siswa</label>
-          <input type="text" id="absenNama" class="form-control" placeholder="Masukkan nama lengkap siswa" required>
-        </div>
-
-        <div class="col-md-6">
-          <label class="form-label fw-bold">Kelas</label>
-          <select id="absenKelas" class="form-select" required>
-            <option value="">-- Pilih Kelas --</option>
-            <option value="7A">7A</option>
-            <option value="7B">7B</option>
-            <option value="8A">8A</option>
-            <option value="8B">8B</option>
-            <option value="9A">9A</option>
-            <option value="9B">9B</option>
-          </select>
-        </div>
-
-        <div class="col-md-6">
-          <label class="form-label fw-bold">Status Absensi</label>
-          <select id="absenStatus" class="form-select" required>
-            <option value="Hadir">Hadir</option>
-            <option value="Terlambat">Terlambat</option>
-            <option value="Izin">Izin</option>
-            <option value="Sakit">Sakit</option>
-            <option value="Bolos">Bolos</option>
-          </select>
-        </div>
-
-        <div class="col-md-6">
-          <label class="form-label fw-bold">No. WhatsApp Orang Tua / Wali</label>
-          <input type="text" id="absenHP" class="form-control" placeholder="Contoh: 081234567890">
-          <small class="text-muted" style="font-size: 11px;">*Pesan notifikasi WA via Fonnte akan dikirim otomatis ke nomor ini.</small>
-        </div>
+    <!-- TAMPILAN 1: PILIHAN KELAS -->
+    <div id="section-pilih-kelas" class="card card-custom p-4 mb-4">
+      <h4 class="fw-bold text-dark mb-3">Pilih Kelas</h4>
+      <p class="text-muted">Klik salah satu kelas di bawah ini untuk menampilkan daftar siswa:</p>
+      <div id="container-kelas" class="d-flex flex-wrap gap-3 mt-2">
+        <!-- Generasi Tombol Kelas via JavaScript -->
       </div>
+    </div>
 
-      <div class="mt-4">
-        <button type="submit" class="btn btn-success px-4 py-2 fw-bold">📲 Simpan & Kirim WA</button>
+    <!-- TAMPILAN 2: DAFTAR SISWA DALAM KELAS -->
+    <div id="section-daftar-siswa" class="card card-custom p-4 mb-4" style="display: none;">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="fw-bold text-primary m-0" id="judulKelas">Daftar Siswa Kelas --</h4>
+        <button onclick="kembaliKePilihKelas()" class="btn btn-secondary btn-sm fw-bold">⬅️ Kembali ke Pilihan Kelas</button>
       </div>
-    </form>
+      <hr class="mt-0 mb-3">
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-dark">
+            <tr>
+              <th class="text-center" style="width: 8%;">No</th>
+              <th>Nama Siswa</th>
+              <th>No. WA Wali</th>
+              <th class="text-center" style="width: 25%;">Aksi Absen</th>
+            </tr>
+          </thead>
+          <tbody id="tbodySiswa">
+            <!-- Data siswa akan dirender di sini -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
   </div>
 
   <!-- ========================================== -->
-  <!-- HALAMAN 2: REKAP ABSENSI                  -->
+  <!-- HALAMAN 2: REKAP ABSENSI                   -->
   <!-- ========================================== -->
   <div id="page-rekap" style="display: none;">
-    <!-- FILTER REKAP (NO-PRINT) -->
     <div class="card card-custom p-4 mb-4 no-print">
-      <h4 class="fw-bold text-primary mb-3">📊 Rekapitulasi Absensi Siswa</h4>
-      
+      <h4 class="fw-bold text-primary mb-3">📊 Rekapitulasi Absensi</h4>
       <div class="row g-3">
         <div class="col-md-3">
           <label class="form-label fw-bold">Jenis Rekap</label>
-          <select id="jenisRekap" class="form-select" onchange="toggleFilter()">
+          <select id="jenisRekap" class="form-select" onchange="toggleFilterRekap()">
             <option value="siswa">Per Siswa</option>
             <option value="kelas">Per Kelas</option>
           </select>
         </div>
-
         <div class="col-md-3" id="boxSiswa">
           <label class="form-label fw-bold">Nama Siswa</label>
-          <input type="text" id="inputNamaSiswa" class="form-control" placeholder="Masukkan nama siswa">
+          <input type="text" id="inputNamaSiswa" class="form-control" placeholder="Nama siswa">
         </div>
-
         <div class="col-md-3" id="boxKelas" style="display:none;">
           <label class="form-label fw-bold">Pilih Kelas</label>
-          <select id="selectKelas" class="form-select">
-            <option value="7A">7A</option>
-            <option value="7B">7B</option>
-            <option value="8A">8A</option>
-            <option value="8B">8B</option>
-            <option value="9A">9A</option>
-            <option value="9B">9B</option>
-          </select>
+          <select id="selectKelasRekap" class="form-select"></select>
         </div>
-
         <div class="col-md-3">
           <label class="form-label fw-bold">Dari Tanggal</label>
           <input type="date" id="tglMulai" class="form-control">
         </div>
-        
         <div class="col-md-3">
           <label class="form-label fw-bold">Sampai Tanggal</label>
           <input type="date" id="tglSelesai" class="form-control">
         </div>
       </div>
-
-      <div class="mt-4 d-flex gap-2 flex-wrap">
+      <div class="mt-4 d-flex gap-2">
         <button onclick="prosesRekap()" class="btn btn-primary px-4">🔍 Tampilkan Data</button>
         <button onclick="window.print()" class="btn btn-danger px-4">📄 Cetak / Download PDF</button>
       </div>
-
-      <!-- KOTAK OPSIONAL KIRIM REKAP PDF KE WA WALI (KHUSUS PER SISWA) -->
-      <div id="boxKirimWaRekap" class="mt-4 pt-3 border-top" style="display: none;">
-        <label class="form-label fw-bold text-success">📲 Kirim PDF Rekap Ini ke WhatsApp Wali Murid:</label>
-        <div class="row g-2 align-items-center">
-          <div class="col-md-4">
-            <input type="text" id="waWaliRekap" class="form-control form-control-sm" placeholder="Nomor WA Wali (e.g. 081234567890)">
-          </div>
-          <div class="col-md-3">
-            <button onclick="kirimPdfWa()" class="btn btn-sm btn-success w-100 fw-bold">Send PDF via WA</button>
-          </div>
-        </div>
-      </div>
-
     </div>
 
-    <!-- HASIL TABEL REKAP -->
-    <div class="card card-custom card-print p-4 bg-white">
-      <div id="headerLaporan" class="text-center mb-4">
+    <!-- TABEL HASIL REKAP -->
+    <div class="card card-custom p-4 bg-white">
+      <div class="text-center mb-4">
         <h3 class="fw-bold mb-1 text-uppercase">Laporan Rekapitulasi Absensi</h3>
-        <p id="subHeaderLaporan" class="text-muted mb-0">Silakan tentukan filter di atas dan klik Tampilkan Data</p>
+        <p id="subHeaderLaporan" class="text-muted mb-0">Silakan pilih filter dan klik Tampilkan Data</p>
       </div>
-
       <div class="table-responsive">
         <table class="table table-bordered align-middle" id="tabelRekap">
           <thead class="table-dark">
-            <tr>
-              <th class="text-center">Informasi</th>
-            </tr>
+            <tr><th class="text-center">Informasi</th></tr>
           </thead>
           <tbody>
-            <tr>
-              <td class="text-center text-muted py-4">Belum ada data yang dimuat.</td>
-            </tr>
+            <tr><td class="text-center text-muted py-4">Belum ada data dimuat.</td></tr>
           </tbody>
         </table>
       </div>
@@ -225,6 +144,9 @@
 </div>
 
 <script>
+  var daftarDaftarKelas = ["7A", "7B", "8A", "8B", "9A", "9B"];
+  var currentKelas = "";
+
   document.addEventListener("DOMContentLoaded", function() {
     var today = new Date().toISOString().split('T')[0];
     document.getElementById("tglMulai").value = today;
@@ -233,6 +155,8 @@
     var defaultUrl = "https://script.google.com/macros/s/AKfycbwrIB-R1zkZB1cXMFtSK7hY_vFpVFgYS8tMZFn1XDc5sDqiuFHjbuiJprC2vfsnwEaK/exec";
     var savedUrl = localStorage.getItem("APPS_SCRIPT_URL") || defaultUrl;
     document.getElementById("webAppUrl").value = savedUrl;
+
+    renderTombolKelas();
   });
 
   function simpanUrlScript() {
@@ -240,9 +164,29 @@
     if (url) {
       localStorage.setItem("APPS_SCRIPT_URL", url);
       alert("URL Apps Script berhasil disimpan!");
-    } else {
-      alert("Mohon masukkan URL Apps Script yang valid.");
     }
+  }
+
+  function renderTombolKelas() {
+    var container = document.getElementById("container-kelas");
+    var selectRekap = document.getElementById("selectKelasRekap");
+    container.innerHTML = "";
+    selectRekap.innerHTML = "";
+
+    daftarDaftarKelas.forEach(kelas => {
+      // Button Halaman Utama
+      var btn = document.createElement("button");
+      btn.className = "btn btn-outline-primary btn-kelas px-4 py-3";
+      btn.innerHTML = "🏫 Kelas " + kelas;
+      btn.onclick = function() { bukaKelas(kelas); };
+      container.appendChild(btn);
+
+      // Select Option Rekap
+      var opt = document.createElement("option");
+      opt.value = kelas;
+      opt.innerText = "Kelas " + kelas;
+      selectRekap.appendChild(opt);
+    });
   }
 
   function switchTab(tab) {
@@ -259,7 +203,91 @@
     }
   }
 
-  function toggleFilter() {
+  function bukaKelas(kelas) {
+    var scriptUrl = document.getElementById("webAppUrl").value.trim();
+    if (!scriptUrl) { alert("Harap isi URL Google Apps Script!"); return; }
+
+    currentKelas = kelas;
+    document.getElementById("judulKelas").innerText = "Daftar Siswa Kelas " + kelas;
+    showLoading(true, "Memuat daftar siswa...");
+
+    fetch(`${scriptUrl}?action=getSiswaByKelas&kelas=${encodeURIComponent(kelas)}`)
+      .then(res => res.json())
+      .then(data => {
+        showLoading(false);
+        document.getElementById("section-pilih-kelas").style.display = "none";
+        document.getElementById("section-daftar-siswa").style.display = "block";
+        renderTabelSiswaKelas(data);
+      })
+      .catch(err => {
+        showLoading(false);
+        alert("Gagal mengambil daftar siswa. Pastikan Sheet 'Data_Siswa' tersedia.");
+      });
+  }
+
+  function kembaliKePilihKelas() {
+    document.getElementById("section-daftar-siswa").style.display = "none";
+    document.getElementById("section-pilih-kelas").style.display = "block";
+  }
+
+  function renderTabelSiswaKelas(siswaArr) {
+    var tbody = document.getElementById("tbodySiswa");
+    tbody.innerHTML = "";
+
+    if (!siswaArr || siswaArr.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-4">Belum ada siswa terdaftar di Kelas ${currentKelas}.</td></tr>`;
+      return;
+    }
+
+    siswaArr.forEach((siswa, idx) => {
+      var tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="text-center">${idx + 1}</td>
+        <td class="fw-bold">${siswa.nama}</td>
+        <td>${siswa.nomorHP || '-'}</td>
+        <td class="text-center">
+          <button id="btn-absen-${idx}" class="btn btn-success btn-sm px-3 fw-bold" onclick="eksekusiAbsen('${siswa.nama}', '${siswa.nomorHP}', ${idx})">
+            📲 Absen Sekarang
+          </button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function eksekusiAbsen(nama, nomorHP, indexBtn) {
+    var scriptUrl = document.getElementById("webAppUrl").value.trim();
+    var btn = document.getElementById(`btn-absen-${indexBtn}`);
+    
+    showLoading(true, "Mencatat absensi & mengirim WA...");
+
+    var payload = {
+      action: "simpanAbsenOtomatis",
+      nama: nama,
+      kelas: currentKelas,
+      nomorHP: nomorHP
+    };
+
+    fetch(scriptUrl, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+    .then(() => {
+      showLoading(false);
+      btn.className = "btn btn-secondary btn-sm px-3 disabled";
+      btn.innerText = "✅ Sudah Absen";
+      btn.disabled = true;
+      alert(`Absensi untuk ${nama} berhasil dicatat & WA terkirim!`);
+    })
+    .catch(err => {
+      showLoading(false);
+      alert("Gagal mencatat absensi.");
+    });
+  }
+
+  function toggleFilterRekap() {
     var jenis = document.getElementById("jenisRekap").value;
     if (jenis === "siswa") {
       document.getElementById("boxSiswa").style.display = "block";
@@ -267,216 +295,58 @@
     } else {
       document.getElementById("boxSiswa").style.display = "none";
       document.getElementById("boxKelas").style.display = "block";
-      document.getElementById("boxKirimWaRekap").style.display = "none";
     }
   }
 
-  function showLoading(show, text = "Memproses data...") {
+  function showLoading(show, text = "Memproses...") {
     document.getElementById("loadingText").innerText = text;
     document.getElementById("loading").style.display = show ? "flex" : "none";
   }
 
-  function submitAbsensi(e) {
-    e.preventDefault();
-    var scriptUrl = document.getElementById("webAppUrl").value.trim();
-    if (!scriptUrl) {
-      alert("Harap masukkan URL Google Apps Script!");
-      return;
-    }
-
-    var nama = document.getElementById("absenNama").value.trim();
-    var kelas = document.getElementById("absenKelas").value;
-    var status = document.getElementById("absenStatus").value;
-    var nomorHP = document.getElementById("absenHP").value.trim();
-
-    showLoading(true, "Menyimpan Absen & Mengirim WA...");
-
-    var payload = {
-      action: "simpanAbsen",
-      nama: nama,
-      kelas: kelas,
-      status: status,
-      nomorHP: nomorHP
-    };
-
-    fetch(scriptUrl, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    })
-    .then(() => {
-      showLoading(false);
-      alert("Data absensi berhasil disimpan!");
-      document.getElementById("formAbsensi").reset();
-    })
-    .catch(err => {
-      console.error(err);
-      showLoading(false);
-      alert("Gagal mengirim data absensi.");
-    });
-  }
-
   function prosesRekap() {
     var scriptUrl = document.getElementById("webAppUrl").value.trim();
-    if (!scriptUrl) {
-      alert("Harap masukkan URL Google Apps Script!");
-      return;
-    }
-
     var jenis = document.getElementById("jenisRekap").value;
     var tglMulai = document.getElementById("tglMulai").value;
     var tglSelesai = document.getElementById("tglSelesai").value;
-
-    if (!tglMulai || !tglSelesai) {
-      alert("Harap tentukan rentang tanggal!");
-      return;
-    }
 
     showLoading(true, "Mengambil data rekap...");
 
     if (jenis === "siswa") {
       var nama = document.getElementById("inputNamaSiswa").value.trim();
-      if (!nama) {
-        alert("Harap isi nama siswa!");
-        showLoading(false);
-        return;
-      }
+      document.getElementById("subHeaderLaporan").innerText = `Rekap Per Siswa: ${nama} (${tglMulai} s.d ${tglSelesai})`;
 
-      document.getElementById("subHeaderLaporan").innerText = `Rekapitulasi Per Siswa: ${nama} (${tglMulai} s.d ${tglSelesai})`;
-      var targetUrl = `${scriptUrl}?action=getRekapSiswa&nama=${encodeURIComponent(nama)}&tglMulai=${tglMulai}&tglSelesai=${tglSelesai}`;
-      
-      fetch(targetUrl)
+      fetch(`${scriptUrl}?action=getRekapSiswa&nama=${encodeURIComponent(nama)}&tglMulai=${tglMulai}&tglSelesai=${tglSelesai}`)
         .then(res => res.json())
         .then(data => {
-          renderTabelSiswa(data);
-          document.getElementById("boxKirimWaRekap").style.display = "block";
           showLoading(false);
-        })
-        .catch(err => {
-          console.error(err);
-          alert("Gagal mengambil data dari Google Apps Script.");
-          showLoading(false);
+          var html = `<thead class="table-dark"><tr><th class="text-center">No</th><th class="text-center">Tanggal</th><th class="text-center">Jam</th><th class="text-center">Status</th></tr></thead><tbody>`;
+          if(data.length === 0) { html += `<tr><td colspan="4" class="text-center py-3">Tidak ada data.</td></tr>`; }
+          else {
+            data.forEach((row, i) => {
+              var badge = row.status === 'Bolos' ? 'bg-danger' : (row.status === 'Terlambat' ? 'bg-warning text-dark' : 'bg-success');
+              html += `<tr><td class="text-center">${i+1}</td><td class="text-center">${row.tanggal}</td><td class="text-center">${row.jam}</td><td class="text-center"><span class="badge ${badge}">${row.status}</span></td></tr>`;
+            });
+          }
+          document.getElementById("tabelRekap").innerHTML = html + `</tbody>`;
         });
-
     } else {
-      var kelas = document.getElementById("selectKelas").value;
-      document.getElementById("subHeaderLaporan").innerText = `Rekapitulasi Per Kelas: ${kelas} (${tglMulai} s.d ${tglSelesai})`;
-      document.getElementById("boxKirimWaRekap").style.display = "none";
+      var kelas = document.getElementById("selectKelasRekap").value;
+      document.getElementById("subHeaderLaporan").innerText = `Rekap Per Kelas: ${kelas} (${tglMulai} s.d ${tglSelesai})`;
 
-      var targetUrl = `${scriptUrl}?action=getRekapKelas&kelas=${encodeURIComponent(kelas)}&tglMulai=${tglMulai}&tglSelesai=${tglSelesai}`;
-
-      fetch(targetUrl)
+      fetch(`${scriptUrl}?action=getRekapKelas&kelas=${encodeURIComponent(kelas)}&tglMulai=${tglMulai}&tglSelesai=${tglSelesai}`)
         .then(res => res.json())
         .then(data => {
-          renderTabelKelas(data);
           showLoading(false);
-        })
-        .catch(err => {
-          console.error(err);
-          alert("Gagal mengambil data dari Google Apps Script.");
-          showLoading(false);
+          var html = `<thead class="table-dark"><tr><th class="text-center">No</th><th>Nama Siswa</th><th class="text-center">Tepat Waktu</th><th class="text-center">Terlambat</th><th class="text-center">Bolos</th></tr></thead><tbody>`;
+          if(data.length === 0) { html += `<tr><td colspan="5" class="text-center py-3">Tidak ada data.</td></tr>`; }
+          else {
+            data.forEach((row, i) => {
+              html += `<tr><td class="text-center">${i+1}</td><td>${row.nama}</td><td class="text-center"><span class="badge bg-success">${row.tidakTerlambat}</span></td><td class="text-center"><span class="badge bg-warning text-dark">${row.terlambat}</span></td><td class="text-center"><span class="badge bg-danger">${row.bolos}</span></td></tr>`;
+            });
+          }
+          document.getElementById("tabelRekap").innerHTML = html + `</tbody>`;
         });
     }
-  }
-
-  function renderTabelSiswa(data) {
-    if (!data || data.length === 0) {
-      document.getElementById("tabelRekap").innerHTML = `<tbody><tr><td class="text-center py-4 text-muted">Tidak ada data absensi pada rentang tanggal tersebut.</td></tr></tbody>`;
-      return;
-    }
-
-    var html = `<thead class="table-dark">
-      <tr>
-        <th class="text-center" style="width: 10%;">No</th>
-        <th class="text-center">Tanggal</th>
-        <th class="text-center">Jam Absen</th>
-        <th class="text-center">Status</th>
-      </tr>
-    </thead><tbody>`;
-
-    data.forEach((row, index) => {
-      var badgeClass = row.status === 'Bolos' ? 'bg-danger' : (row.status === 'Terlambat' ? 'bg-warning text-dark' : 'bg-success');
-      html += `<tr>
-        <td class="text-center">${index + 1}</td>
-        <td class="text-center">${row.tanggal}</td>
-        <td class="text-center">${row.jam}</td>
-        <td class="text-center"><span class="badge ${badgeClass}">${row.status}</span></td>
-      </tr>`;
-    });
-
-    html += `</tbody>`;
-    document.getElementById("tabelRekap").innerHTML = html;
-  }
-
-  function renderTabelKelas(data) {
-    if (!data || data.length === 0) {
-      document.getElementById("tabelRekap").innerHTML = `<tbody><tr><td class="text-center py-4 text-muted">Tidak ada data siswa untuk kelas ini.</td></tr></tbody>`;
-      return;
-    }
-
-    var html = `<thead class="table-dark">
-      <tr>
-        <th class="text-center" style="width: 8%;">No</th>
-        <th>Nama Siswa</th>
-        <th class="text-center">Tidak Terlambat</th>
-        <th class="text-center">Terlambat</th>
-        <th class="text-center">Bolos</th>
-      </tr>
-    </thead><tbody>`;
-
-    data.forEach((row, index) => {
-      html += `<tr>
-        <td class="text-center">${index + 1}</td>
-        <td>${row.nama}</td>
-        <td class="text-center"><span class="badge bg-success">${row.tidakTerlambat} Kali</span></td>
-        <td class="text-center"><span class="badge bg-warning text-dark">${row.terlambat} Kali</span></td>
-        <td class="text-center"><span class="badge bg-danger">${row.bolos} Kali</span></td>
-      </tr>`;
-    });
-
-    html += `</tbody>`;
-    document.getElementById("tabelRekap").innerHTML = html;
-  }
-
-  // FUNGSI MENGIRIM PDF REKAP VIA WA
-  function kirimPdfWa() {
-    var scriptUrl = document.getElementById("webAppUrl").value.trim();
-    var nama = document.getElementById("inputNamaSiswa").value.trim();
-    var tglMulai = document.getElementById("tglMulai").value;
-    var tglSelesai = document.getElementById("tglSelesai").value;
-    var nomorHP = document.getElementById("waWaliRekap").value.trim();
-
-    if (!nomorHP) {
-      alert("Harap isi nomor WhatsApp Wali Murid!");
-      return;
-    }
-
-    showLoading(true, "Membuat PDF & Mengirim ke WA...");
-
-    var payload = {
-      action: "kirimPdfRekapWa",
-      nama: nama,
-      tglMulai: tglMulai,
-      tglSelesai: tglSelesai,
-      nomorHP: nomorHP
-    };
-
-    fetch(scriptUrl, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    })
-    .then(() => {
-      showLoading(false);
-      alert("Permintaan pengiriman PDF Rekap ke WhatsApp berhasil diproses!");
-    })
-    .catch(err => {
-      console.error(err);
-      showLoading(false);
-      alert("Gagal mengirim PDF Rekap ke WhatsApp.");
-    });
   }
 </script>
 
