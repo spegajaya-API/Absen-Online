@@ -55,7 +55,7 @@
 <!-- OVERLAY LOADING -->
 <div id="loading" class="loading-overlay">
   <div class="spinner-border text-primary" role="status"></div>
-  <span class="mt-2 fw-bold text-secondary">Memproses data...</span>
+  <span class="mt-2 fw-bold text-secondary" id="loadingText">Memproses data...</span>
 </div>
 
 <div class="container my-4">
@@ -134,7 +134,7 @@
   </div>
 
   <!-- ========================================== -->
-  <!-- HALAMAN 2: REKAP ABSENSI (TERSEMBUNYI)    -->
+  <!-- HALAMAN 2: REKAP ABSENSI                  -->
   <!-- ========================================== -->
   <div id="page-rekap" style="display: none;">
     <!-- FILTER REKAP (NO-PRINT) -->
@@ -178,10 +178,24 @@
         </div>
       </div>
 
-      <div class="mt-4 d-flex gap-2">
+      <div class="mt-4 d-flex gap-2 flex-wrap">
         <button onclick="prosesRekap()" class="btn btn-primary px-4">🔍 Tampilkan Data</button>
         <button onclick="window.print()" class="btn btn-danger px-4">📄 Cetak / Download PDF</button>
       </div>
+
+      <!-- KOTAK OPSIONAL KIRIM REKAP PDF KE WA WALI (KHUSUS PER SISWA) -->
+      <div id="boxKirimWaRekap" class="mt-4 pt-3 border-top" style="display: none;">
+        <label class="form-label fw-bold text-success">📲 Kirim PDF Rekap Ini ke WhatsApp Wali Murid:</label>
+        <div class="row g-2 align-items-center">
+          <div class="col-md-4">
+            <input type="text" id="waWaliRekap" class="form-control form-control-sm" placeholder="Nomor WA Wali (e.g. 081234567890)">
+          </div>
+          <div class="col-md-3">
+            <button onclick="kirimPdfWa()" class="btn btn-sm btn-success w-100 fw-bold">Send PDF via WA</button>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- HASIL TABEL REKAP -->
@@ -211,13 +225,11 @@
 </div>
 
 <script>
-  // Inisialisasi awal saat halaman dimuat
   document.addEventListener("DOMContentLoaded", function() {
     var today = new Date().toISOString().split('T')[0];
     document.getElementById("tglMulai").value = today;
     document.getElementById("tglSelesai").value = today;
 
-    // URL Apps Script default kamu
     var defaultUrl = "https://script.google.com/macros/s/AKfycbwrIB-R1zkZB1cXMFtSK7hY_vFpVFgYS8tMZFn1XDc5sDqiuFHjbuiJprC2vfsnwEaK/exec";
     var savedUrl = localStorage.getItem("APPS_SCRIPT_URL") || defaultUrl;
     document.getElementById("webAppUrl").value = savedUrl;
@@ -233,7 +245,6 @@
     }
   }
 
-  // LOGIKA PINDAH TAB (ABSEN VS REKAP)
   function switchTab(tab) {
     if (tab === 'absen') {
       document.getElementById("page-absen").style.display = "block";
@@ -256,14 +267,15 @@
     } else {
       document.getElementById("boxSiswa").style.display = "none";
       document.getElementById("boxKelas").style.display = "block";
+      document.getElementById("boxKirimWaRekap").style.display = "none";
     }
   }
 
-  function showLoading(show) {
+  function showLoading(show, text = "Memproses data...") {
+    document.getElementById("loadingText").innerText = text;
     document.getElementById("loading").style.display = show ? "flex" : "none";
   }
 
-  // FUNGSI SUBMIT ABSENSI KE APPS SCRIPT
   function submitAbsensi(e) {
     e.preventDefault();
     var scriptUrl = document.getElementById("webAppUrl").value.trim();
@@ -277,7 +289,7 @@
     var status = document.getElementById("absenStatus").value;
     var nomorHP = document.getElementById("absenHP").value.trim();
 
-    showLoading(true);
+    showLoading(true, "Menyimpan Absen & Mengirim WA...");
 
     var payload = {
       action: "simpanAbsen",
@@ -289,13 +301,13 @@
 
     fetch(scriptUrl, {
       method: "POST",
-      mode: "no-cors", // Mengatasi masalah CORS pada Google Apps Script POST
+      mode: "no-cors",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     })
     .then(() => {
       showLoading(false);
-      alert("Data absensi berhasil dikirim & proses WA berjalan!");
+      alert("Data absensi berhasil disimpan!");
       document.getElementById("formAbsensi").reset();
     })
     .catch(err => {
@@ -305,7 +317,6 @@
     });
   }
 
-  // FUNGSI PROSES REKAP
   function prosesRekap() {
     var scriptUrl = document.getElementById("webAppUrl").value.trim();
     if (!scriptUrl) {
@@ -322,7 +333,7 @@
       return;
     }
 
-    showLoading(true);
+    showLoading(true, "Mengambil data rekap...");
 
     if (jenis === "siswa") {
       var nama = document.getElementById("inputNamaSiswa").value.trim();
@@ -339,6 +350,7 @@
         .then(res => res.json())
         .then(data => {
           renderTabelSiswa(data);
+          document.getElementById("boxKirimWaRekap").style.display = "block";
           showLoading(false);
         })
         .catch(err => {
@@ -350,6 +362,8 @@
     } else {
       var kelas = document.getElementById("selectKelas").value;
       document.getElementById("subHeaderLaporan").innerText = `Rekapitulasi Per Kelas: ${kelas} (${tglMulai} s.d ${tglSelesai})`;
+      document.getElementById("boxKirimWaRekap").style.display = "none";
+
       var targetUrl = `${scriptUrl}?action=getRekapKelas&kelas=${encodeURIComponent(kelas)}&tglMulai=${tglMulai}&tglSelesai=${tglSelesai}`;
 
       fetch(targetUrl)
@@ -382,7 +396,7 @@
     </thead><tbody>`;
 
     data.forEach((row, index) => {
-      var badgeClass = row.status === 'Bolos' ? 'bg-danger' : 'bg-success';
+      var badgeClass = row.status === 'Bolos' ? 'bg-danger' : (row.status === 'Terlambat' ? 'bg-warning text-dark' : 'bg-success');
       html += `<tr>
         <td class="text-center">${index + 1}</td>
         <td class="text-center">${row.tanggal}</td>
@@ -423,6 +437,46 @@
 
     html += `</tbody>`;
     document.getElementById("tabelRekap").innerHTML = html;
+  }
+
+  // FUNGSI MENGIRIM PDF REKAP VIA WA
+  function kirimPdfWa() {
+    var scriptUrl = document.getElementById("webAppUrl").value.trim();
+    var nama = document.getElementById("inputNamaSiswa").value.trim();
+    var tglMulai = document.getElementById("tglMulai").value;
+    var tglSelesai = document.getElementById("tglSelesai").value;
+    var nomorHP = document.getElementById("waWaliRekap").value.trim();
+
+    if (!nomorHP) {
+      alert("Harap isi nomor WhatsApp Wali Murid!");
+      return;
+    }
+
+    showLoading(true, "Membuat PDF & Mengirim ke WA...");
+
+    var payload = {
+      action: "kirimPdfRekapWa",
+      nama: nama,
+      tglMulai: tglMulai,
+      tglSelesai: tglSelesai,
+      nomorHP: nomorHP
+    };
+
+    fetch(scriptUrl, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+    .then(() => {
+      showLoading(false);
+      alert("Permintaan pengiriman PDF Rekap ke WhatsApp berhasil diproses!");
+    })
+    .catch(err => {
+      console.error(err);
+      showLoading(false);
+      alert("Gagal mengirim PDF Rekap ke WhatsApp.");
+    });
   }
 </script>
 
