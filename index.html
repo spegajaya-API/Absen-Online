@@ -7,27 +7,29 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body {
-      background-color: #f8f9fa;
+      background-color: #f4f6f9;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
     .card-custom {
       background-color: #ffffff;
       border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
       border: none;
+    }
+    .nav-pills .nav-link.active {
+      background-color: #0d6efd;
     }
     .loading-overlay {
       display: none;
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(255, 255, 255, 0.8);
+      background: rgba(255, 255, 255, 0.85);
       z-index: 9999;
       justify-content: center;
       align-items: center;
       flex-direction: column;
     }
     
-    /* SETTINGAN CETAK / EXPORT PDF */
     @media print {
       .no-print {
         display: none !important;
@@ -44,10 +46,6 @@
       .card-print {
         box-shadow: none !important;
         border: none !important;
-        padding: 0 !important;
-      }
-      table {
-        font-size: 11px;
       }
     }
   </style>
@@ -57,86 +55,156 @@
 <!-- OVERLAY LOADING -->
 <div id="loading" class="loading-overlay">
   <div class="spinner-border text-primary" role="status"></div>
-  <span class="mt-2 fw-bold text-secondary">Sedang memproses data...</span>
+  <span class="mt-2 fw-bold text-secondary">Memproses data...</span>
 </div>
 
 <div class="container my-4">
 
-  <!-- FORM SETUP URL APPS SCRIPT (NO-PRINT) -->
-  <div class="card card-custom p-3 mb-3 no-print bg-light border">
-    <label class="form-label fw-bold text-dark mb-1">🔗 URL Web App Google Apps Script:</label>
-    <div class="input-group">
-      <input type="text" id="webAppUrl" class="form-control form-control-sm" placeholder="https://script.google.com/macros/s/.../exec">
-      <button onclick="simpanUrlScript()" class="btn btn-sm btn-outline-secondary">Simpan URL</button>
-    </div>
-    <small class="text-muted mt-1" style="font-size: 11px;">*https://script.google.com/macros/s/AKfycbwrlB-R1zkZB1cXMFtSK7hY_vFpVFgYS8tMZFn1XDc5sDqiuFHjbuiJprC2vfsnwEaK/exec`.</small>
+  <!-- NAVBAR / TAB NAVIGASI (NO-PRINT) -->
+  <div class="d-flex justify-content-between align-items-center mb-4 no-print flex-wrap gap-2">
+    <h3 class="fw-bold text-primary m-0">🏫 Sistem Absensi Digital</h3>
+    <ul class="nav nav-pills" id="mainTab" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active fw-bold" id="tab-absen" onclick="switchTab('absen')">📝 Input Absensi</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link fw-bold" id="tab-rekap" onclick="switchTab('rekap')">📊 Rekap Data</button>
+      </li>
+    </ul>
   </div>
 
-  <!-- PANEL FILTER REKAP (NO-PRINT) -->
-  <div class="card card-custom p-4 mb-4 no-print">
-    <h4 class="fw-bold text-primary mb-3">📊 Rekapitulasi Absensi Siswa</h4>
+  <!-- SETUP URL WEB APP APPS SCRIPT (NO-PRINT) -->
+  <div class="card card-custom p-3 mb-4 no-print bg-white border">
+    <label class="form-label fw-bold text-secondary mb-1" style="font-size: 13px;">🔗 URL Web App Google Apps Script:</label>
+    <div class="input-group input-group-sm">
+      <input type="text" id="webAppUrl" class="form-control" placeholder="https://script.google.com/macros/s/AKfycbwrlB-R1zkZB1cXMFtSK7hY_vFpVFgYS8tMZFn1XDc5sDqiuFHjbuiJprC2vfsnwEaK/exec">
+      <button onclick="simpanUrlScript()" class="btn btn-outline-primary">Simpan URL</button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- HALAMAN 1: FORM INPUT ABSENSI (DEFAULT)    -->
+  <!-- ========================================== -->
+  <div id="page-absen" class="card card-custom p-4 mb-4">
+    <h4 class="fw-bold text-dark mb-3">Form Presensi Siswa</h4>
+    <hr class="mt-0 mb-4">
     
-    <div class="row g-3">
-      <div class="col-md-3">
-        <label class="form-label fw-bold">Jenis Rekap</label>
-        <select id="jenisRekap" class="form-select" onchange="toggleFilter()">
-          <option value="siswa">Per Siswa</option>
-          <option value="kelas">Per Kelas</option>
-        </select>
+    <form id="formAbsensi" onsubmit="submitAbsensi(event)">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label fw-bold">Nama Siswa</label>
+          <input type="text" id="absenNama" class="form-control" placeholder="Masukkan nama lengkap siswa" required>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label fw-bold">Kelas</label>
+          <select id="absenKelas" class="form-select" required>
+            <option value="">-- Pilih Kelas --</option>
+            <option value="7A">7A</option>
+            <option value="7B">7B</option>
+            <option value="8A">8A</option>
+            <option value="8B">8B</option>
+            <option value="9A">9A</option>
+            <option value="9B">9B</option>
+          </select>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label fw-bold">Status Absensi</label>
+          <select id="absenStatus" class="form-select" required>
+            <option value="Hadir">Hadir</option>
+            <option value="Terlambat">Terlambat</option>
+            <option value="Izin">Izin</option>
+            <option value="Sakit">Sakit</option>
+            <option value="Bolos">Bolos</option>
+          </select>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label fw-bold">No. WhatsApp Orang Tua / Wali</label>
+          <input type="text" id="absenHP" class="form-control" placeholder="Contoh: 081234567890">
+          <small class="text-muted" style="font-size: 11px;">*Pesan notifikasi WA via Fonnte akan dikirim otomatis ke nomor ini.</small>
+        </div>
       </div>
 
-      <div class="col-md-3" id="boxSiswa">
-        <label class="form-label fw-bold">Nama Siswa</label>
-        <input type="text" id="inputNamaSiswa" class="form-control" placeholder="Masukkan nama siswa">
+      <div class="mt-4">
+        <button type="submit" class="btn btn-success px-4 py-2 fw-bold">📲 Simpan & Kirim WA</button>
       </div>
-
-      <div class="col-md-3" id="boxKelas" style="display:none;">
-        <label class="form-label fw-bold">Pilih Kelas</label>
-        <select id="selectKelas" class="form-select">
-          <option value="7A">7A</option>
-          <option value="7B">7B</option>
-          <option value="8A">8A</option>
-          <option value="8B">8B</option>
-        </select>
-      </div>
-
-      <div class="col-md-3">
-        <label class="form-label fw-bold">Dari Tanggal</label>
-        <input type="date" id="tglMulai" class="form-control">
-      </div>
-      
-      <div class="col-md-3">
-        <label class="form-label fw-bold">Sampai Tanggal</label>
-        <input type="date" id="tglSelesai" class="form-control">
-      </div>
-    </div>
-
-    <div class="mt-4 d-flex gap-2">
-      <button onclick="prosesRekap()" class="btn btn-primary px-4">🔍 Tampilkan Data</button>
-      <button onclick="window.print()" class="btn btn-danger px-4">📄 Cetak / Download PDF</button>
-    </div>
+    </form>
   </div>
 
-  <!-- HASIL TABEL REKAP (AREA YANG DICETAK SEBAGAI PDF) -->
-  <div class="card card-custom card-print p-4 bg-white">
-    <div id="headerLaporan" class="text-center mb-4">
-      <h3 class="fw-bold mb-1 text-uppercase">Laporan Rekapitulasi Absensi</h3>
-      <p id="subHeaderLaporan" class="text-muted mb-0">Silakan tentukan filter di atas dan klik Tampilkan Data</p>
+  <!-- ========================================== -->
+  <!-- HALAMAN 2: REKAP ABSENSI (TERSEMBUNYI)    -->
+  <!-- ========================================== -->
+  <div id="page-rekap" style="display: none;">
+    <!-- FILTER REKAP (NO-PRINT) -->
+    <div class="card card-custom p-4 mb-4 no-print">
+      <h4 class="fw-bold text-primary mb-3">📊 Rekapitulasi Absensi Siswa</h4>
+      
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label fw-bold">Jenis Rekap</label>
+          <select id="jenisRekap" class="form-select" onchange="toggleFilter()">
+            <option value="siswa">Per Siswa</option>
+            <option value="kelas">Per Kelas</option>
+          </select>
+        </div>
+
+        <div class="col-md-3" id="boxSiswa">
+          <label class="form-label fw-bold">Nama Siswa</label>
+          <input type="text" id="inputNamaSiswa" class="form-control" placeholder="Masukkan nama siswa">
+        </div>
+
+        <div class="col-md-3" id="boxKelas" style="display:none;">
+          <label class="form-label fw-bold">Pilih Kelas</label>
+          <select id="selectKelas" class="form-select">
+            <option value="7A">7A</option>
+            <option value="7B">7B</option>
+            <option value="8A">8A</option>
+            <option value="8B">8B</option>
+            <option value="9A">9A</option>
+            <option value="9B">9B</option>
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label fw-bold">Dari Tanggal</label>
+          <input type="date" id="tglMulai" class="form-control">
+        </div>
+        
+        <div class="col-md-3">
+          <label class="form-label fw-bold">Sampai Tanggal</label>
+          <input type="date" id="tglSelesai" class="form-control">
+        </div>
+      </div>
+
+      <div class="mt-4 d-flex gap-2">
+        <button onclick="prosesRekap()" class="btn btn-primary px-4">🔍 Tampilkan Data</button>
+        <button onclick="window.print()" class="btn btn-danger px-4">📄 Cetak / Download PDF</button>
+      </div>
     </div>
 
-    <div class="table-responsive">
-      <table class="table table-bordered align-middle" id="tabelRekap">
-        <thead class="table-dark">
-          <tr>
-            <th class="text-center">Informasi</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td class="text-center text-muted py-4">Belum ada data yang dimuat.</td>
-          </tr>
-        </tbody>
-      </table>
+    <!-- HASIL TABEL REKAP -->
+    <div class="card card-custom card-print p-4 bg-white">
+      <div id="headerLaporan" class="text-center mb-4">
+        <h3 class="fw-bold mb-1 text-uppercase">Laporan Rekapitulasi Absensi</h3>
+        <p id="subHeaderLaporan" class="text-muted mb-0">Silakan tentukan filter di atas dan klik Tampilkan Data</p>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-bordered align-middle" id="tabelRekap">
+          <thead class="table-dark">
+            <tr>
+              <th class="text-center">Informasi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-center text-muted py-4">Belum ada data yang dimuat.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -149,11 +217,10 @@
     document.getElementById("tglMulai").value = today;
     document.getElementById("tglSelesai").value = today;
 
-    // Load URL Script dari LocalStorage jika sudah pernah disimpan
-    var savedUrl = localStorage.getItem("APPS_SCRIPT_URL");
-    if (savedUrl) {
-      document.getElementById("webAppUrl").value = savedUrl;
-    }
+    // URL Apps Script default kamu
+    var defaultUrl = "https://script.google.com/macros/s/AKfycbwrIB-R1zkZB1cXMFtSK7hY_vFpVFgYS8tMZFn1XDc5sDqiuFHjbuiJprC2vfsnwEaK/exec";
+    var savedUrl = localStorage.getItem("APPS_SCRIPT_URL") || defaultUrl;
+    document.getElementById("webAppUrl").value = savedUrl;
   });
 
   function simpanUrlScript() {
@@ -163,6 +230,21 @@
       alert("URL Apps Script berhasil disimpan!");
     } else {
       alert("Mohon masukkan URL Apps Script yang valid.");
+    }
+  }
+
+  // LOGIKA PINDAH TAB (ABSEN VS REKAP)
+  function switchTab(tab) {
+    if (tab === 'absen') {
+      document.getElementById("page-absen").style.display = "block";
+      document.getElementById("page-rekap").style.display = "none";
+      document.getElementById("tab-absen").classList.add("active");
+      document.getElementById("tab-rekap").classList.remove("active");
+    } else {
+      document.getElementById("page-absen").style.display = "none";
+      document.getElementById("page-rekap").style.display = "block";
+      document.getElementById("tab-absen").classList.remove("active");
+      document.getElementById("tab-rekap").classList.add("active");
     }
   }
 
@@ -181,10 +263,53 @@
     document.getElementById("loading").style.display = show ? "flex" : "none";
   }
 
+  // FUNGSI SUBMIT ABSENSI KE APPS SCRIPT
+  function submitAbsensi(e) {
+    e.preventDefault();
+    var scriptUrl = document.getElementById("webAppUrl").value.trim();
+    if (!scriptUrl) {
+      alert("Harap masukkan URL Google Apps Script!");
+      return;
+    }
+
+    var nama = document.getElementById("absenNama").value.trim();
+    var kelas = document.getElementById("absenKelas").value;
+    var status = document.getElementById("absenStatus").value;
+    var nomorHP = document.getElementById("absenHP").value.trim();
+
+    showLoading(true);
+
+    var payload = {
+      action: "simpanAbsen",
+      nama: nama,
+      kelas: kelas,
+      status: status,
+      nomorHP: nomorHP
+    };
+
+    fetch(scriptUrl, {
+      method: "POST",
+      mode: "no-cors", // Mengatasi masalah CORS pada Google Apps Script POST
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+    .then(() => {
+      showLoading(false);
+      alert("Data absensi berhasil dikirim & proses WA berjalan!");
+      document.getElementById("formAbsensi").reset();
+    })
+    .catch(err => {
+      console.error(err);
+      showLoading(false);
+      alert("Gagal mengirim data absensi.");
+    });
+  }
+
+  // FUNGSI PROSES REKAP
   function prosesRekap() {
     var scriptUrl = document.getElementById("webAppUrl").value.trim();
     if (!scriptUrl) {
-      alert("Harap masukkan dan simpan URL Google Apps Script terlebih dahulu!");
+      alert("Harap masukkan URL Google Apps Script!");
       return;
     }
 
@@ -208,8 +333,6 @@
       }
 
       document.getElementById("subHeaderLaporan").innerText = `Rekapitulasi Per Siswa: ${nama} (${tglMulai} s.d ${tglSelesai})`;
-
-      // Memanggil API Apps Script via GET/Fetch
       var targetUrl = `${scriptUrl}?action=getRekapSiswa&nama=${encodeURIComponent(nama)}&tglMulai=${tglMulai}&tglSelesai=${tglSelesai}`;
       
       fetch(targetUrl)
@@ -227,7 +350,6 @@
     } else {
       var kelas = document.getElementById("selectKelas").value;
       document.getElementById("subHeaderLaporan").innerText = `Rekapitulasi Per Kelas: ${kelas} (${tglMulai} s.d ${tglSelesai})`;
-
       var targetUrl = `${scriptUrl}?action=getRekapKelas&kelas=${encodeURIComponent(kelas)}&tglMulai=${tglMulai}&tglSelesai=${tglSelesai}`;
 
       fetch(targetUrl)
@@ -244,10 +366,9 @@
     }
   }
 
-  // RENDER TABEL SISWA
   function renderTabelSiswa(data) {
     if (!data || data.length === 0) {
-      document.getElementById("tabelRekap").innerHTML = `<tbody><tr><td class="text-center py-4 text-muted">Tidak ada data absensi pada rentang tanggal tersebut (atau hari libur/akhir pekan).</td></tr></tbody>`;
+      document.getElementById("tabelRekap").innerHTML = `<tbody><tr><td class="text-center py-4 text-muted">Tidak ada data absensi pada rentang tanggal tersebut.</td></tr></tbody>`;
       return;
     }
 
@@ -274,7 +395,6 @@
     document.getElementById("tabelRekap").innerHTML = html;
   }
 
-  // RENDER TABEL KELAS
   function renderTabelKelas(data) {
     if (!data || data.length === 0) {
       document.getElementById("tabelRekap").innerHTML = `<tbody><tr><td class="text-center py-4 text-muted">Tidak ada data siswa untuk kelas ini.</td></tr></tbody>`;
