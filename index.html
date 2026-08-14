@@ -112,7 +112,7 @@
 
   <div class="container py-4">
 
-    <!-- SECTION 1: PILIHAN KELAS (7A, 8A, 8B, 9A, 9B) -->
+    <!-- SECTION 1: PILIHAN KELAS -->
     <div id="secPilihanKelas" class="section-view">
       <div class="card card-custom p-4 mb-4">
         <h4 class="fw-bold mb-3"><i class="bi bi-grid-3x3-gap-fill text-primary me-2"></i>Pilih Kelas</h4>
@@ -284,7 +284,6 @@
 
     var currentDataSiswa = [];
 
-    // Mengambil Tanggal Hari Ini Format YYYY-MM-DD
     function getTodayString() {
       var d = new Date();
       var month = '' + (d.getMonth() + 1);
@@ -297,7 +296,6 @@
       return [year, month, day].join('-');
     }
 
-    // Navigasi Halaman Utama
     function showSection(sectionName) {
       document.querySelectorAll('.section-view').forEach(el => el.classList.add('d-none'));
       if (sectionName === 'pilihanKelas') {
@@ -309,7 +307,6 @@
       }
     }
 
-    // Switch Tab Rekap (Siswa / Kelas)
     function switchRekapTab(tab) {
       if (tab === 'siswa') {
         document.getElementById('btnTabSiswa').classList.add('active');
@@ -324,7 +321,6 @@
       }
     }
 
-    // Membuka Kelas & Fetch Siswa (Absensi)
     function bukaKelas(namaKelas) {
       document.getElementById('judulKelas').innerText = "Daftar Siswa Kelas " + namaKelas;
       showSection('daftarSiswa');
@@ -344,7 +340,6 @@
         });
     }
 
-    // Render Tabel Siswa (Mengecek Status Absen Tersimpan)
     function renderDaftarSiswa(daftar) {
       var tbody = document.getElementById("tabelSiswaBody");
       tbody.innerHTML = "";
@@ -358,8 +353,6 @@
 
       daftar.forEach(function (siswa, index) {
         var row = document.createElement("tr");
-
-        // Cek apakah sudah ada status terabsen untuk siswa ini di hari ini
         var storageKey = `absen_${todayStr}_${siswa.nama}`;
         var savedStatus = localStorage.getItem(storageKey);
 
@@ -390,7 +383,6 @@
       });
     }
 
-    // ABSEN SISWA & SIMPAN STATUS KE LOCAL STORAGE
     function absenSiswa(nama, kelas, nomorHP, index, btnElement) {
       var originalHTML = btnElement.innerHTML;
       btnElement.classList.add("btn-loading");
@@ -430,7 +422,6 @@
       });
     }
 
-    // Filter Pencarian Siswa
     function filterSiswa() {
       var query = document.getElementById("cariSiswaInput").value.toLowerCase();
       var filtered = currentDataSiswa.filter(function(siswa) {
@@ -439,7 +430,6 @@
       renderDaftarSiswa(filtered);
     }
 
-    // FUNGSI MEMUAT NAMA SISWA BERDASARKAN KELAS UNTUK REKAP
     function loadSiswaByKelasForRekap() {
       var kelas = document.getElementById("rekapPilihKelasSiswa").value;
       var selectNama = document.getElementById("rekapNamaSiswa");
@@ -469,7 +459,6 @@
         });
     }
 
-    // FUNGSI LOGIC REKAP PER SISWA
     function tampilkanRekapSiswa() {
       var nama = document.getElementById("rekapNamaSiswa").value;
       var tglMulai = document.getElementById("rekapTglMulaiSiswa").value;
@@ -504,7 +493,6 @@
         });
     }
 
-    // FUNGSI LOGIC REKAP PER KELAS
     function tampilkanRekapKelas() {
       var kelas = document.getElementById("rekapPilihKelas").value;
       var tglMulai = document.getElementById("rekapTglMulaiKelas").value;
@@ -531,7 +519,7 @@
               <tr>
                 <td class="text-center">${idx + 1}</td>
                 <td class="fw-semibold">${row.nama}</td>
-                <td class="text-center text-success fw-bold">${row.tidakTerlambat}</td>
+                <td class="text-center text-success fw-bold">${row.tepatWaktu}</td>
                 <td class="text-center text-warning fw-bold">${row.terlambat}</td>
                 <td class="text-center text-danger fw-bold">${row.bolos}</td>
               </tr>`;
