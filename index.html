@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SIM Absensi Masuk Pagi</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <style>
+    body { background-color: #f4f6f9; font-family: 'Segoe UI', Roboto, sans-serif; }
+    .header-box { background: linear-gradient(135deg, #0d6efd, #0d47a1); color: white; border-radius: 12px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    .card-custom { border: none; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; }
+    .btn-class { background-color: #ffffff; border: 2px solid #0d6efd; color: #0d6efd; font-weight: 600; text-align: left; transition: all 0.2s; }
+    .btn-class:hover, .btn-class.active { background-color: #0d6efd; color: white; }
+    .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); display: flex; justify-content: center; align-items: center; z-index: 9999; }
+  </style>
+</head>
+<body>
+
+  <!-- LOADING SPINNER -->
+  <div id="loading" class="loading-overlay d-none">
+    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <div class="container py-4">
+    
+    <!-- HEADER -->
+    <div class="header-box text-center">
+      <h2 id="lblLembaga" class="fw-bold mb-1">Memuat Data...</h2>
+      <h5 id="lblAplikasi" class="opacity-75">...</h5>
+    </div>
+
+    <!-- TAB NAVIGASI -->
+    <ul class="nav nav-pills mb-4 nav-justified bg-white p-2 rounded-3 shadow-sm" id="pills-tab" role="tablist">
+      <li class="nav-item">
+        <button class="nav-link active fw-bold" id="pills-absen-tab" data-bs-toggle="pill" data-bs-target="#pills-absen" type="button"><i class="bi bi-clock-history me-2"></i>Absen Pagi</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link fw-bold" id="pills-rekap-tab" data-bs-toggle="pill" data-bs-target="#pills-rekap" type="button"><i class="bi bi-file-earmark-text me-2"></i>Rekap Absen</button>
+      </li>
+    </ul>
+
+    <div class="tab-content" id="pills-tabContent">
+      
+      <!-- TAB 1: ABSEN HARIAN -->
+      <div class="tab-pane fade show active" id="pills-absen" role="tabpanel">
+        <div class="row">
+          <div class="col-md-4">
+            <div class="card card-custom p-3">
+              <h6 class="fw-bold mb-3"><i class="bi bi-building me-2"></i>Pilih Kelas</h6>
+              <div id="kelasContainer" class="d-grid gap-2"></div>
+            </div>
+          </div>
+          <div class="col-md-8">
+            <div class="card card-custom p-3">
+              <h6 class="fw-bold mb-3" id="judulListSiswa"><i class="bi bi-people me-2"></i>Daftar Siswa</h6>
+              <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                  <thead class="table-light">
+                    <tr>
+                      <th>No</th>
+                      <th>Nama Siswa</th>
+                      <th>Status / Jam</th>
+                      <th class="text-end">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="siswaTbody">
+                    <tr><td colspan="4" class="text-center text-muted">Silakan pilih kelas terlebih dahulu.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: REKAP ABSEN -->
+      <div class="tab-pane fade" id="pills-rekap" role="tabpanel">
+        <div class="card card-custom p-4">
+          <h5 class="fw-bold mb-3"><i class="bi bi-funnel me-2"></i>Filter Rekap Absensi</h5>
+          <div class="row g-3 mb-4">
+            <div class="col-md-3">
+              <label class="form-label">Tipe Rekap</label>
+              <select id="tipeRekap" class="form-select" onchange="toggleFilterRekap()">
+                <option value="kelas">Per Kelas</option>
+                <option value="siswa">Per Siswa</option>
+              </select>
+            </div>
+            <div class="col-md-3" id="boxFilterKelas">
+              <label class="form-label">Pilih Kelas</label>
+              <select id="selectRekapKelas" class="form-select"></select>
+            </div>
+            <div class="col-md-3 d-none" id="boxFilterSiswa">
+              <label class="form-label">ID Siswa</label>
+              <input type="text" id="inputRekapIdSiswa" class="form-control" placeholder="Masukkan ID Siswa">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Tanggal Mulai</label>
+              <input type="date" id="startTgl" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Tanggal Selesai</label>
+              <input type="date" id="endTgl" class="form-control">
+            </div>
+          </div>
+          <button class="btn btn-primary w-100 fw-bold mb-4" onclick="loadRekap()"><i class="bi bi-search me-2"></i>Tampilkan Rekap</button>
+
+          <div id="areaPrint">
+            <div id="hasilRekap"></div>
+          </div>
+          <div class="d-flex justify-content-end gap-2 mt-3 d-none" id="boxAksiRekap">
+            <button class="btn btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer me-2"></i>Cetak / Save PDF</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // MASUKKAN URL WEB APP GOOGLE APPS SCRIPT ANDA DI SINI
+    const API_URL = "https://script.google.com/macros/s/AKfycbwrlB-R1zkZB1cXMFtSK7hY_vFpVFgYS8tMZFn1XDc5sDqiuFHjbuiJprC2vfsnwEaK/exec";
+
+    let currentKelas = "";
+
+    window.onload = function() {
+      showLoading(true);
+      fetch(`${API_URL}?action=getInitialData`)
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById("lblLembaga").innerText = data.lembaga;
+          document.getElementById("lblAplikasi").innerText = data.aplikasi;
+          
+          let htmlKelas = "";
+          let selectRekapHtml = "";
+          data.kelasList.forEach(k => {
+            htmlKelas += `<button class="btn btn-class p-2 mb-1" id="btn-kelas-${k}" onclick="selectKelas('${k}')"><i class="bi bi-door-open me-2"></i>Kelas ${k}</button>`;
+            selectRekapHtml += `<option value="${k}">${k}</option>`;
+          });
+          document.getElementById("kelasContainer").innerHTML = htmlKelas;
+          document.getElementById("selectRekapKelas").innerHTML = selectRekapHtml;
+          showLoading(false);
+        })
+        .catch(err => {
+          showLoading(false);
+          alert("Gagal memuat data awal. Pastikan URL API sudah benar.");
+        });
+    };
+
+    function showLoading(show) {
+      const el = document.getElementById("loading");
+      if (show) el.classList.remove("d-none");
+      else el.classList.add("d-none");
+    }
+
+    function selectKelas(kelas) {
+      currentKelas = kelas;
+      document.querySelectorAll('.btn-class').forEach(b => b.classList.remove('active'));
+      const activeBtn = document.getElementById(`btn-kelas-${kelas}`);
+      if(activeBtn) activeBtn.classList.add('active');
+
+      document.getElementById("judulListSiswa").innerHTML = `<i class="bi bi-people me-2"></i>Daftar Siswa Kelas ${kelas}`;
+      
+      showLoading(true);
+      fetch(`${API_URL}?action=getSiswaByKelas&kelas=${encodeURIComponent(kelas)}`)
+        .then(res => res.json())
+        .then(list => {
+          renderSiswa(list);
+          showLoading(false);
+        });
+    }
+
+    function renderSiswa(list) {
+      let html = "";
+      if (list.length === 0) {
+        html = `<tr><td colspan="4" class="text-center text-muted">Tidak ada siswa di kelas ini.</td></tr>`;
+      } else {
+        list.forEach((s, idx) => {
+          let statusBtn = "";
+          let statusBadge = "";
+          
+          if (s.absenInfo) {
+            if (s.absenInfo.status === "Tidak Terlambat") {
+              statusBadge = `<span class="badge bg-success">Tidak Terlambat (${s.absenInfo.waktu})</span>`;
+            } else if (s.absenInfo.status === "Terlambat") {
+              statusBadge = `<span class="badge bg-warning text-dark">Terlambat (${s.absenInfo.waktu})</span>`;
+            } else if (s.absenInfo.status === "Bolos") {
+              statusBadge = `<span class="badge bg-danger">Bolos</span>`;
+            }
+            statusBtn = `<button class="btn btn-secondary btn-sm" disabled>Sudah Absen</button>`;
+          } else {
+            statusBadge = `<span class="badge bg-light text-dark">Belum Absen</span>`;
+            statusBtn = `<button class="btn btn-primary btn-sm" onclick="doAbsen('${s.id}')"><i class="bi bi-check-circle me-1"></i>Absen</button>`;
+          }
+
+          html += `<tr>
+            <td>${idx + 1}</td>
+            <td class="fw-bold">${s.nama}</td>
+            <td>${statusBadge}</td>
+            <td class="text-end">${statusBtn}</td>
+          </tr>`;
+        });
+      }
+      document.getElementById("siswaTbody").innerHTML = html;
+    }
+
+    function doAbsen(idSiswa) {
+      showLoading(true);
+      fetch(`${API_URL}?action=prosesAbsen&idSiswa=${encodeURIComponent(idSiswa)}`)
+        .then(res => res.json())
+        .then(res => {
+          showLoading(false);
+          if (res.success) {
+            selectKelas(currentKelas);
+          } else {
+            alert(res.message);
+          }
+        });
+    }
+
+    function toggleFilterRekap() {
+      const tipe = document.getElementById("tipeRekap").value;
+      if (tipe === "kelas") {
+        document.getElementById("boxFilterKelas").classList.remove("d-none");
+        document.getElementById("boxFilterSiswa").classList.add("d-none");
+      } else {
+        document.getElementById("boxFilterKelas").classList.add("d-none");
+        document.getElementById("boxFilterSiswa").classList.remove("d-none");
+      }
+    }
+
+    function loadRekap() {
+      const tipe = document.getElementById("tipeRekap").value;
+      const start = document.getElementById("startTgl").value;
+      const end = document.getElementById("endTgl").value;
+      const targetVal = tipe === "kelas" ? document.getElementById("selectRekapKelas").value : document.getElementById("inputRekapIdSiswa").value;
+
+      if (!start || !end || !targetVal) {
+        alert("Silakan lengkapi semua filter!");
+        return;
+      }
+
+      showLoading(true);
+      fetch(`${API_URL}?action=getRekapData&tipe=${tipe}&startTgl=${start}&endTgl=${end}&targetVal=${encodeURIComponent(targetVal)}`)
+        .then(res => res.json())
+        .then(data => {
+          showLoading(false);
+          renderHasilRekap(data, tipe, targetVal);
+        });
+    }
+
+    function renderHasilRekap(data, tipe, target) {
+      let html = "";
+      document.getElementById("boxAksiRekap").classList.remove("d-none");
+
+      if (tipe === "siswa") {
+        html += `<h5>Rekap Presensi Siswa (ID: ${target})</h5>`;
+        html += `<table class="table table-bordered mt-3">
+          <thead class="table-light"><tr><th>Tanggal</th><th>Status</th><th>Jam Absen</th></tr></thead>
+          <tbody>`;
+        data.forEach(d => {
+          html += `<tr><td>${d.tanggal}</td><td>${d.status}</td><td>${d.jam}</td></tr>`;
+        });
+        html += `</tbody></table>`;
+      } else {
+        html += `<h5>Rekap Presensi Kelas ${target}</h5>`;
+        html += `<table class="table table-bordered mt-3">
+          <thead class="table-light">
+            <tr>
+              <th>No</th><th>Nama Siswa</th><th>Tidak Terlambat</th><th>Terlambat</th><th>Bolos</th><th>Total Records</th>
+            </tr>
+          </thead><tbody>`;
+        data.forEach((d, idx) => {
+          html += `<tr>
+            <td>${idx + 1}</td>
+            <td>${d.nama}</td>
+            <td class="text-success fw-bold">${d.tidakTerlambat}</td>
+            <td class="text-warning fw-bold">${d.terlambat}</td>
+            <td class="text-danger fw-bold">${d.bolos}</td>
+            <td>${d.total}</td>
+          </tr>`;
+        });
+        html += `</tbody></table>`;
+      }
+
+      document.getElementById("hasilRekap").innerHTML = html;
+    }
+  </script>
+</body>
+</html>
