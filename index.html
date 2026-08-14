@@ -88,6 +88,23 @@
       background-color: #0d6efd;
       color: #ffffff;
     }
+
+    /* PENGATURAN CETAK / PRINT PDF */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #areaCetakRekap, #areaCetakRekap * {
+        visibility: visible;
+      }
+      #areaCetakRekap {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: white !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -254,7 +271,55 @@
             </div>
           </div>
 
-          <div class="table-responsive rounded-3 border mt-3">
+          <!-- TOMBOL AKSI TAMBAHAN (PRINT & KIRIM WA) -->
+          <div class="d-flex justify-content-end gap-2 mb-3">
+            <button class="btn btn-outline-danger fw-semibold rounded-pill px-3" onclick="printRekapPDF()">
+              <i class="bi bi-file-earmark-pdf me-1"></i> Cetak / PDF
+            </button>
+            <button class="btn btn-success fw-semibold rounded-pill px-3" onclick="kirimRekapWADigital()">
+              <i class="bi bi-whatsapp me-1"></i> Kirim Rekap WA Wali
+            </button>
+          </div>
+
+          <!-- AREA TABEL DAN SURAT PENGANTAR UNTUK CETAK/PDF -->
+          <div class="table-responsive rounded-3 border mt-3 p-3 bg-white" id="areaCetakRekap">
+            
+            <!-- SURAT PENGANTAR (Hanya tampil saat dicetak/print) -->
+            <div id="suratPengantarPDF" class="d-none mb-4">
+              <div class="text-center border-bottom pb-3 mb-3">
+                <h5 class="fw-bold m-0">PEMERINTAH KABUPATEN BLITAR</h5>
+                <h4 class="fw-bold m-0 text-uppercase">Laporan Rekapitulasi Kehadiran Siswa</h4>
+                <p class="text-muted small m-0" id="infoPeriodeCetak"></p>
+              </div>
+              
+              <div class="mb-3" style="font-size: 0.95rem; line-height: 1.6; color: #333;">
+                <p class="mb-2">Kepada Yth.<br><strong>Bapak/Ibu Wali Murid</strong><br>di Tempat</p>
+                
+                <p class="mb-2"><em>Assalamu'alaikum warahmatullahi wabarakatuh,</em><br>Salam sejahtera bagi kita semua,</p>
+                
+                <p class="text-justify mb-2">
+                  Melalui laporan ini, pihak sekolah menyampaikan rekapitulasi tingkat kehadiran putra/putri Bapak/Ibu selama periode belajar yang tertera di bawah ini. Informasi ini kami sediakan sebagai bentuk transparansi dan sarana pemantauan bersama terhadap kedisiplinan serta kelancaran proses kegiatan belajar mengajar di sekolah.
+                </p>
+                
+                <p class="text-justify mb-3">
+                  Kami sangat mengharapkan dukungan, perhatian, serta kerja sama aktif dari Bapak/Ibu sekalian di rumah, guna memotivasi Ananda agar senantiasa hadir tepat waktu dan mengikuti pembelajaran dengan baik. Keberhasilan pendidikan anak-anak kita tentu tidak lepas dari sinergi yang erat antara pihak sekolah dan keluarga.
+                </p>
+                
+                <p class="mb-4">Atas perhatian, waktu, dan kerja sama yang baik dari Bapak/Ibu sekalian, kami ucapkan terima kasih.</p>
+                
+                <div class="d-flex justify-content-end">
+                  <div class="text-center" style="min-width: 200px;">
+                    <p class="mb-1">Hormat Kami,</p>
+                    <p class="fw-bold mb-5">Pihak Sekolah / Guru Kelas</p>
+                    <p class="fw-semibold m-0">( ........................................ )</p>
+                  </div>
+                </div>
+              </div>
+              
+              <hr class="my-4 border-dark">
+              <h6 class="fw-bold mb-3 text-center">LAMPIRAN: TABEL REKAP KEHADIRAN KELAS</h6>
+            </div>
+
             <table class="table table-hover align-middle m-0">
               <thead>
                 <tr>
@@ -283,6 +348,7 @@
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwrlB-R1zkZB1cXMFtSK7hY_vFpVFgYS8tMZFn1XDc5sDqiuFHjbuiJprC2vfsnwEaK/exec"; 
 
     var currentDataSiswa = [];
+    var lastRekapDataKelas = [];
 
     function getTodayString() {
       var d = new Date();
@@ -509,6 +575,7 @@
       fetch(`${SCRIPT_URL}?action=getRekapKelas&kelas=${encodeURIComponent(kelas)}&tglMulai=${tglMulai}&tglSelesai=${tglSelesai}`)
         .then(res => res.json())
         .then(data => {
+          lastRekapDataKelas = data;
           tbody.innerHTML = "";
           if (!data || data.length === 0) {
             tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">Tidak ada data rekap untuk kelas ini.</td></tr>`;
@@ -525,6 +592,43 @@
               </tr>`;
           });
         });
+    }
+
+    function printRekapPDF() {
+      if (!lastRekapDataKelas || lastRekapDataKelas.length === 0) {
+        alert("Belum ada data rekap yang ditampilkan. Silakan klik tombol 'Cari' terlebih dahulu.");
+        return;
+      }
+      
+      var kelas = document.getElementById("rekapPilihKelas").value;
+      var tglMulai = document.getElementById("rekapTglMulaiKelas").value;
+      var tglSelesai = document.getElementById("rekapTglSelesaiKelas").value;
+
+      document.getElementById("infoPeriodeCetak").innerText = `Kelas: ${kelas} | Periode: ${tglMulai} s/d ${tglSelesai}`;
+      
+      var suratPengantar = document.getElementById("suratPengantarPDF");
+      suratPengantar.classList.remove("d-none");
+
+      window.print();
+
+      suratPengantar.classList.add("d-none");
+    }
+
+    function kirimRekapWADigital() {
+      if (!lastRekapDataKelas || lastRekapDataKelas.length === 0) {
+        alert("Tampilkan data rekap kelas terlebih dahulu sebelum mengirim pesan.");
+        return;
+      }
+
+      var kelas = document.getElementById("rekapPilihKelas").value;
+      var tglMulai = document.getElementById("rekapTglMulaiKelas").value;
+      var tglSelesai = document.getElementById("rekapTglSelesaiKelas").value;
+
+      if (!confirm(`Apakah Anda yakin ingin mengirim rekap periode ${tglMulai} s/d ${tglSelesai} ke seluruh wali murid Kelas ${kelas}?`)) {
+        return;
+      }
+
+      alert("Fitur pengiriman rekap massal sedang diproses. Pastikan nomor HP wali murid sudah terdaftar di sheet Siswa.");
     }
   </script>
 </body>
