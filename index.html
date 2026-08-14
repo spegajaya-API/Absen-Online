@@ -173,12 +173,12 @@
         <h4 class="fw-bold mb-3"><i class="bi bi-file-earmark-bar-graph text-primary me-2"></i>Rekap Absensi</h4>
         
         <!-- Tab Mode Rekap -->
-        <div class="d-flex gap-2 mb-4 bg-light p-1 rounded-pill style="width: fit-content;">
+        <div class="d-flex gap-2 mb-4 bg-light p-1 rounded-pill" style="width: fit-content;">
           <button class="tab-btn active" id="btnTabSiswa" onclick="switchRekapTab('siswa')">Rekap Per Siswa</button>
           <button class="tab-btn" id="btnTabKelas" onclick="switchRekapTab('kelas')">Rekap Per Kelas</button>
         </div>
 
-        <!-- TAB 1: REKAP PER SISWA (DIPERBAIKI: DROPDOWN KELAS & NAMA) -->
+        <!-- TAB 1: REKAP PER SISWA -->
         <div id="tabContentSiswa">
           <div class="row g-3 mb-3">
             <div class="col-md-3">
@@ -284,6 +284,19 @@
 
     var currentDataSiswa = [];
 
+    // Mengambil Tanggal Hari Ini Format YYYY-MM-DD
+    function getTodayString() {
+      var d = new Date();
+      var month = '' + (d.getMonth() + 1);
+      var day = '' + d.getDate();
+      var year = d.getFullYear();
+
+      if (month.length < 2) month = '0' + month;
+      if (day.length < 2) day = '0' + day;
+
+      return [year, month, day].join('-');
+    }
+
     // Navigasi Halaman Utama
     function showSection(sectionName) {
       document.querySelectorAll('.section-view').forEach(el => el.classList.add('d-none'));
@@ -331,7 +344,7 @@
         });
     }
 
-    // Render Tabel Siswa
+    // Render Tabel Siswa (Mengecek Status Absen Tersimpan)
     function renderDaftarSiswa(daftar) {
       var tbody = document.getElementById("tabelSiswaBody");
       tbody.innerHTML = "";
@@ -341,23 +354,43 @@
         return;
       }
 
+      var todayStr = getTodayString();
+
       daftar.forEach(function (siswa, index) {
         var row = document.createElement("tr");
+
+        // Cek apakah sudah ada status terabsen untuk siswa ini di hari ini
+        var storageKey = `absen_${todayStr}_${siswa.nama}`;
+        var savedStatus = localStorage.getItem(storageKey);
+
+        var actionHtml = "";
+        if (savedStatus === "Tepat Waktu") {
+          actionHtml = `<span class="badge bg-success-subtle text-success border border-success px-3 py-2 rounded-pill"><i class="bi bi-check-lg me-1"></i> Tepat Waktu</span>`;
+        } else if (savedStatus === "Terlambat") {
+          actionHtml = `<span class="badge bg-warning-subtle text-warning border border-warning px-3 py-2 rounded-pill"><i class="bi bi-exclamation-triangle me-1"></i> Terlambat</span>`;
+        } else if (savedStatus === "Bolos") {
+          actionHtml = `<span class="badge bg-danger-subtle text-danger border border-danger px-3 py-2 rounded-pill"><i class="bi bi-x-circle me-1"></i> Bolos</span>`;
+        } else {
+          actionHtml = `
+            <button class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm" onclick="absenSiswa('${siswa.nama}', '${siswa.kelas}', '${siswa.nomorHP}', ${index}, this)">
+              <i class="bi bi-check-circle me-1"></i> Absen
+            </button>
+          `;
+        }
+
         row.innerHTML = `
           <td class="text-center fw-semibold">${index + 1}</td>
           <td class="fw-semibold">${siswa.nama}</td>
           <td>${siswa.nomorHP || '-'}</td>
           <td class="text-center" id="action-cell-${index}">
-            <button class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm" onclick="absenSiswa('${siswa.nama}', '${siswa.kelas}', '${siswa.nomorHP}', ${index}, this)">
-              <i class="bi bi-check-circle me-1"></i> Absen
-            </button>
+            ${actionHtml}
           </td>
         `;
         tbody.appendChild(row);
       });
     }
 
-    // ABSEN CEPAT TANPA RELOAD HALAMAN
+    // ABSEN SISWA & SIMPAN STATUS KE LOCAL STORAGE
     function absenSiswa(nama, kelas, nomorHP, index, btnElement) {
       var originalHTML = btnElement.innerHTML;
       btnElement.classList.add("btn-loading");
@@ -377,9 +410,14 @@
       .then(response => response.json())
       .then(data => {
         var cell = document.getElementById(`action-cell-${index}`);
+        var todayStr = getTodayString();
+        var storageKey = `absen_${todayStr}_${nama}`;
+
         if (data.status === "Tepat Waktu") {
+          localStorage.setItem(storageKey, "Tepat Waktu");
           cell.innerHTML = `<span class="badge bg-success-subtle text-success border border-success px-3 py-2 rounded-pill"><i class="bi bi-check-lg me-1"></i> Tepat Waktu</span>`;
         } else {
+          localStorage.setItem(storageKey, "Terlambat");
           cell.innerHTML = `<span class="badge bg-warning-subtle text-warning border border-warning px-3 py-2 rounded-pill"><i class="bi bi-exclamation-triangle me-1"></i> Terlambat</span>`;
         }
       })
