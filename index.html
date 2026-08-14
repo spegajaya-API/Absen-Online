@@ -3,350 +3,308 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aplikasi Absensi Online</title>
-  <!-- Bootstrap 5 CSS -->
+  <title>Sistem Absensi & Rekap Presensi</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <style>
-    body { background-color: #f4f6f9; }
-    .sidebar { background: #ffffff; min-height: 100vh; border-right: 1px solid #deeeff; }
-    .btn-class.active { background-color: #0d6efd; color: #fff; }
+    body {
+      background-color: #f8f9fa;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .card-custom {
+      background-color: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      border: none;
+    }
     .loading-overlay {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(255,255,255,0.7); display: flex;
-      justify-content: center; align-items: center; z-index: 9999;
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(255, 255, 255, 0.8);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+    
+    /* SETTINGAN CETAK / EXPORT PDF */
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      body {
+        background-color: #ffffff;
+      }
+      .container {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      .card-print {
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+      }
+      table {
+        font-size: 11px;
+      }
     }
   </style>
 </head>
 <body>
 
-  <!-- Overlay Loading Keseluruhan (Hanya Tampil Saat Pindah Kelas / Muat Awal) -->
-  <div id="loading" class="loading-overlay d-none">
-    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
-      <span class="visually-hidden">Loading...</span>
+<!-- OVERLAY LOADING -->
+<div id="loading" class="loading-overlay">
+  <div class="spinner-border text-primary" role="status"></div>
+  <span class="mt-2 fw-bold text-secondary">Sedang memproses data...</span>
+</div>
+
+<div class="container my-4">
+
+  <!-- FORM SETUP URL APPS SCRIPT (NO-PRINT) -->
+  <div class="card card-custom p-3 mb-3 no-print bg-light border">
+    <label class="form-label fw-bold text-dark mb-1">🔗 URL Web App Google Apps Script:</label>
+    <div class="input-group">
+      <input type="text" id="webAppUrl" class="form-control form-control-sm" placeholder="https://script.google.com/macros/s/.../exec">
+      <button onclick="simpanUrlScript()" class="btn btn-sm btn-outline-secondary">Simpan URL</button>
     </div>
+    <small class="text-muted mt-1" style="font-size: 11px;">*https://script.google.com/macros/s/AKfycbwrlB-R1zkZB1cXMFtSK7hY_vFpVFgYS8tMZFn1XDc5sDqiuFHjbuiJprC2vfsnwEaK/exec`.</small>
   </div>
 
-  <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
-    <div class="container-fluid">
-      <a class="navbar-brand fw-bold" href="#">
-        <i class="bi bi-card-checklist me-2"></i><span id="lblAplikasi">SIM ABSENSI MASUK PAGI</span>
-      </a>
-      <span class="navbar-text text-white fw-semibold" id="lblLembaga"></span>
-    </div>
-  </nav>
-
-  <!-- Layout Utama -->
-  <div class="container-fluid">
-    <div class="row">
-      <!-- Sidebar Menu Kelas & Rekap -->
-      <div class="col-md-3 sidebar p-3">
-        <h6 class="fw-bold text-secondary mb-3">Pilih Kelas</h6>
-        <div id="kelasContainer" class="d-grid gap-2"></div>
-
-        <hr class="my-4">
-        
-        <h6 class="fw-bold text-secondary mb-3">Menu Rekapitulasi</h6>
-        <button class="btn btn-outline-primary w-100 mb-2" data-bs-toggle="modal" data-bs-target="#modalRekap">
-          <i class="bi bi-file-earmark-spreadsheet me-2"></i>Buka Rekap
-        </button>
+  <!-- PANEL FILTER REKAP (NO-PRINT) -->
+  <div class="card card-custom p-4 mb-4 no-print">
+    <h4 class="fw-bold text-primary mb-3">📊 Rekapitulasi Absensi Siswa</h4>
+    
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label fw-bold">Jenis Rekap</label>
+        <select id="jenisRekap" class="form-select" onchange="toggleFilter()">
+          <option value="siswa">Per Siswa</option>
+          <option value="kelas">Per Kelas</option>
+        </select>
       </div>
 
-      <!-- Area Daftar Siswa -->
-      <div class="col-md-9 p-4">
-        <div class="card shadow-sm border-0">
-          <div class="card-header bg-white py-3">
-            <h5 class="card-title m-0 fw-bold" id="judulListSiswa">
-              <i class="bi bi-arrow-left-circle me-2"></i>Silakan Pilih Kelas di Menu Samping
-            </h5>
-          </div>
-          <div class="card-body p-0">
-            <div class="table-responsive">
-              <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                  <tr>
-                    <th style="width: 50px;">No</th>
-                    <th>Nama Siswa</th>
-                    <th>Status / Jam</th>
-                    <th class="text-end" style="width: 150px;">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody id="siswaTbody">
-                  <tr>
-                    <td colspan="4" class="text-center text-muted py-4">Pilih kelas terlebih dahulu untuk melihat daftar siswa.</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
+      <div class="col-md-3" id="boxSiswa">
+        <label class="form-label fw-bold">Nama Siswa</label>
+        <input type="text" id="inputNamaSiswa" class="form-control" placeholder="Masukkan nama siswa">
       </div>
-    </div>
-  </div>
 
-  <!-- Modal Rekapitulasi -->
-  <div class="modal fade" id="modalRekap" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title fw-bold"><i class="bi bi-printer me-2"></i>Rekapitulasi Presensi</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <form id="formRekap" onsubmit="return false;">
-            <div class="row g-3">
-              <div class="col-md-4">
-                <label class="form-label fw-bold">Tipe Rekap</label>
-                <select class="form-select" id="tipeRekap" onchange="toggleFilterRekap()">
-                  <option value="kelas">Per Kelas</option>
-                  <option value="siswa">Per Siswa (ID)</option>
-                </select>
-              </div>
-              <div class="col-md-4">
-                <label class="form-label">Tanggal Mulai</label>
-                <input type="date" class="form-control" id="startTgl">
-              </div>
-              <div class="col-md-4">
-                <label class="form-label">Tanggal Selesai</label>
-                <input type="date" class="form-control" id="endTgl">
-              </div>
-
-              <div class="col-md-12" id="boxFilterKelas">
-                <label class="form-label">Pilih Kelas</label>
-                <select class="form-select" id="selectRekapKelas"></select>
-              </div>
-
-              <div class="col-md-12 d-none" id="boxFilterSiswa">
-                <label class="form-label">Masukkan ID / NIS Siswa</label>
-                <input type="text" class="form-control" id="inputRekapIdSiswa" placeholder="Contoh: 1001">
-              </div>
-            </div>
-
-            <button type="button" class="btn btn-primary mt-3 w-100" onclick="loadRekap()">
-              <i class="bi bi-search me-1"></i>Tampilkan Rekap
-            </button>
-          </form>
-
-          <hr class="my-4">
-          <div id="hasilRekap"></div>
-        </div>
+      <div class="col-md-3" id="boxKelas" style="display:none;">
+        <label class="form-label fw-bold">Pilih Kelas</label>
+        <select id="selectKelas" class="form-select">
+          <option value="7A">7A</option>
+          <option value="7B">7B</option>
+          <option value="8A">8A</option>
+          <option value="8B">8B</option>
+        </select>
       </div>
-    </div>
-  </div>
 
-  <!-- Bootstrap 5 JS Bundle -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-  <script>
-    // MASUKKAN URL WEB APP GOOGLE APPS SCRIPT ANDA DI SINI
-    const API_URL = "https://script.google.com/macros/s/AKfycbwrlB-R1zkZB1cXMFtSK7hY_vFpVFgYS8tMZFn1XDc5sDqiuFHjbuiJprC2vfsnwEaK/exec";
-
-    let currentKelas = "";
-
-    window.onload = function() {
-      showLoading(true);
-      fetch(`${API_URL}?action=getInitialData`)
-        .then(res => res.json())
-        .then(data => {
-          document.getElementById("lblLembaga").innerText = data.lembaga;
-          document.getElementById("lblAplikasi").innerText = data.aplikasi;
-          
-          let htmlKelas = "";
-          let selectRekapHtml = "";
-          data.kelasList.forEach(k => {
-            const namaKelas = k.toString().startsWith('Kelas') ? k : 'Kelas ' + k;
-            htmlKelas += `<button class="btn btn-outline-primary btn-class text-start p-2 mb-1" id="btn-kelas-${k}" onclick="selectKelas('${k}')"><i class="bi bi-door-open me-2"></i>${namaKelas}</button>`;
-            selectRekapHtml += `<option value="${k}">${k}</option>`;
-          });
-          document.getElementById("kelasContainer").innerHTML = htmlKelas;
-          document.getElementById("selectRekapKelas").innerHTML = selectRekapHtml;
-          showLoading(false);
-        })
-        .catch(err => {
-          showLoading(false);
-          alert("Gagal memuat data awal. Pastikan URL API sudah benar.");
-        });
-    };
-
-    function showLoading(show) {
-      const el = document.getElementById("loading");
-      if (show) el.classList.remove("d-none");
-      else el.classList.add("d-none");
-    }
-
-    function selectKelas(kelas) {
-      currentKelas = kelas;
-      document.querySelectorAll('.btn-class').forEach(b => b.classList.remove('active'));
-      const activeBtn = document.getElementById(`btn-kelas-${kelas}`);
-      if(activeBtn) activeBtn.classList.add('active');
-
-      const namaJudul = kelas.toString().startsWith('Kelas') ? kelas : 'Kelas ' + kelas;
-      document.getElementById("judulListSiswa").innerHTML = `<i class="bi bi-people me-2"></i>Daftar Siswa ${namaJudul}`;
+      <div class="col-md-3">
+        <label class="form-label fw-bold">Dari Tanggal</label>
+        <input type="date" id="tglMulai" class="form-control">
+      </div>
       
-      showLoading(true);
-      fetch(`${API_URL}?action=getSiswaByKelas&kelas=${encodeURIComponent(kelas)}`)
-        .then(res => res.json())
-        .then(list => {
-          renderSiswa(list);
-          showLoading(false);
-        });
+      <div class="col-md-3">
+        <label class="form-label fw-bold">Sampai Tanggal</label>
+        <input type="date" id="tglSelesai" class="form-control">
+      </div>
+    </div>
+
+    <div class="mt-4 d-flex gap-2">
+      <button onclick="prosesRekap()" class="btn btn-primary px-4">🔍 Tampilkan Data</button>
+      <button onclick="window.print()" class="btn btn-danger px-4">📄 Cetak / Download PDF</button>
+    </div>
+  </div>
+
+  <!-- HASIL TABEL REKAP (AREA YANG DICETAK SEBAGAI PDF) -->
+  <div class="card card-custom card-print p-4 bg-white">
+    <div id="headerLaporan" class="text-center mb-4">
+      <h3 class="fw-bold mb-1 text-uppercase">Laporan Rekapitulasi Absensi</h3>
+      <p id="subHeaderLaporan" class="text-muted mb-0">Silakan tentukan filter di atas dan klik Tampilkan Data</p>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-bordered align-middle" id="tabelRekap">
+        <thead class="table-dark">
+          <tr>
+            <th class="text-center">Informasi</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-center text-muted py-4">Belum ada data yang dimuat.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Inisialisasi awal saat halaman dimuat
+  document.addEventListener("DOMContentLoaded", function() {
+    var today = new Date().toISOString().split('T')[0];
+    document.getElementById("tglMulai").value = today;
+    document.getElementById("tglSelesai").value = today;
+
+    // Load URL Script dari LocalStorage jika sudah pernah disimpan
+    var savedUrl = localStorage.getItem("APPS_SCRIPT_URL");
+    if (savedUrl) {
+      document.getElementById("webAppUrl").value = savedUrl;
+    }
+  });
+
+  function simpanUrlScript() {
+    var url = document.getElementById("webAppUrl").value.trim();
+    if (url) {
+      localStorage.setItem("APPS_SCRIPT_URL", url);
+      alert("URL Apps Script berhasil disimpan!");
+    } else {
+      alert("Mohon masukkan URL Apps Script yang valid.");
+    }
+  }
+
+  function toggleFilter() {
+    var jenis = document.getElementById("jenisRekap").value;
+    if (jenis === "siswa") {
+      document.getElementById("boxSiswa").style.display = "block";
+      document.getElementById("boxKelas").style.display = "none";
+    } else {
+      document.getElementById("boxSiswa").style.display = "none";
+      document.getElementById("boxKelas").style.display = "block";
+    }
+  }
+
+  function showLoading(show) {
+    document.getElementById("loading").style.display = show ? "flex" : "none";
+  }
+
+  function prosesRekap() {
+    var scriptUrl = document.getElementById("webAppUrl").value.trim();
+    if (!scriptUrl) {
+      alert("Harap masukkan dan simpan URL Google Apps Script terlebih dahulu!");
+      return;
     }
 
-    function renderSiswa(list) {
-      let html = "";
-      if (list.length === 0) {
-        html = `<tr><td colspan="4" class="text-center text-muted py-3">Tidak ada siswa di kelas ini.</td></tr>`;
-      } else {
-        list.forEach((s, idx) => {
-          let statusBtn = "";
-          let statusBadge = "";
-          
-          if (s.absenInfo) {
-            if (s.absenInfo.status === "Tidak Terlambat") {
-              statusBadge = `<span class="badge bg-success">Tidak Terlambat (${s.absenInfo.waktu})</span>`;
-            } else if (s.absenInfo.status === "Terlambat") {
-              statusBadge = `<span class="badge bg-warning text-dark">Terlambat (${s.absenInfo.waktu})</span>`;
-            } else if (s.absenInfo.status === "Bolos") {
-              statusBadge = `<span class="badge bg-danger">Bolos</span>`;
-            }
-            statusBtn = `<button class="btn btn-secondary btn-sm" disabled>Sudah Absen</button>`;
-          } else {
-            statusBadge = `<span class="badge bg-light text-dark border" id="badge-status-${s.id}">Belum Absen</span>`;
-            // Tombol menggunakan ID unik per siswa
-            statusBtn = `<button class="btn btn-primary btn-sm" id="btn-absen-${s.id}" onclick="doAbsen('${s.id}')"><i class="bi bi-check-circle me-1"></i>Absen</button>`;
-          }
+    var jenis = document.getElementById("jenisRekap").value;
+    var tglMulai = document.getElementById("tglMulai").value;
+    var tglSelesai = document.getElementById("tglSelesai").value;
 
-          html += `<tr>
-            <td>${idx + 1}</td>
-            <td class="fw-bold">${s.nama}</td>
-            <td>${statusBadge}</td>
-            <td class="text-end">${statusBtn}</td>
-          </tr>`;
-        });
-      }
-      document.getElementById("siswaTbody").innerHTML = html;
+    if (!tglMulai || !tglSelesai) {
+      alert("Harap tentukan rentang tanggal!");
+      return;
     }
 
-    function doAbsen(idSiswa) {
-      const btn = document.getElementById(`btn-absen-${idSiswa}`);
-      
-      if (btn) {
-        // Kunci tombol siswa ini dan munculkan indikator memproses tanpa mengunci seluruh halaman
-        btn.disabled = true;
-        btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Memproses...`;
-      }
+    showLoading(true);
 
-      // Kirim permintaan absen ke Apps Script
-      fetch(`${API_URL}?action=prosesAbsen&idSiswa=${encodeURIComponent(idSiswa)}`)
-        .then(res => res.json())
-        .then(res => {
-          if (res.success) {
-            const badgeElement = document.getElementById(`badge-status-${idSiswa}`);
-            if (badgeElement) {
-              if (res.status === "Tidak Terlambat") {
-                badgeElement.className = "badge bg-success";
-                badgeElement.innerText = `Tidak Terlambat (${res.waktu})`;
-              } else if (res.status === "Terlambat") {
-                badgeElement.className = "badge bg-warning text-dark";
-                badgeElement.innerText = `Terlambat (${res.waktu})`;
-              }
-            }
-            if (btn) {
-              btn.className = "btn btn-secondary btn-sm";
-              btn.innerText = "Sudah Absen";
-            }
-          } else {
-            alert(res.message);
-            if (btn) {
-              btn.disabled = false;
-              btn.innerHTML = `<i class="bi bi-check-circle me-1"></i>Absen`;
-            }
-          }
-        })
-        .catch(err => {
-          if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = `<i class="bi bi-check-circle me-1"></i>Absen`;
-          }
-          alert("Terjadi kesalahan jaringan.");
-        });
-    }
-
-    function toggleFilterRekap() {
-      const tipe = document.getElementById("tipeRekap").value;
-      if (tipe === "kelas") {
-        document.getElementById("boxFilterKelas").classList.remove("d-none");
-        document.getElementById("boxFilterSiswa").classList.add("d-none");
-      } else {
-        document.getElementById("boxFilterKelas").classList.add("d-none");
-        document.getElementById("boxFilterSiswa").classList.remove("d-none");
-      }
-    }
-
-    function loadRekap() {
-      const tipe = document.getElementById("tipeRekap").value;
-      const start = document.getElementById("startTgl").value;
-      const end = document.getElementById("endTgl").value;
-      const targetVal = tipe === "kelas" ? document.getElementById("selectRekapKelas").value : document.getElementById("inputRekapIdSiswa").value;
-
-      if (!start || !end || !targetVal) {
-        alert("Silakan lengkapi semua filter!");
+    if (jenis === "siswa") {
+      var nama = document.getElementById("inputNamaSiswa").value.trim();
+      if (!nama) {
+        alert("Harap isi nama siswa!");
+        showLoading(false);
         return;
       }
 
-      showLoading(true);
-      fetch(`${API_URL}?action=getRekapData&tipe=${tipe}&startTgl=${start}&endTgl=${end}&targetVal=${encodeURIComponent(targetVal)}`)
+      document.getElementById("subHeaderLaporan").innerText = `Rekapitulasi Per Siswa: ${nama} (${tglMulai} s.d ${tglSelesai})`;
+
+      // Memanggil API Apps Script via GET/Fetch
+      var targetUrl = `${scriptUrl}?action=getRekapSiswa&nama=${encodeURIComponent(nama)}&tglMulai=${tglMulai}&tglSelesai=${tglSelesai}`;
+      
+      fetch(targetUrl)
         .then(res => res.json())
         .then(data => {
+          renderTabelSiswa(data);
           showLoading(false);
-          renderHasilRekap(data, tipe, targetVal);
+        })
+        .catch(err => {
+          console.error(err);
+          alert("Gagal mengambil data dari Google Apps Script.");
+          showLoading(false);
+        });
+
+    } else {
+      var kelas = document.getElementById("selectKelas").value;
+      document.getElementById("subHeaderLaporan").innerText = `Rekapitulasi Per Kelas: ${kelas} (${tglMulai} s.d ${tglSelesai})`;
+
+      var targetUrl = `${scriptUrl}?action=getRekapKelas&kelas=${encodeURIComponent(kelas)}&tglMulai=${tglMulai}&tglSelesai=${tglSelesai}`;
+
+      fetch(targetUrl)
+        .then(res => res.json())
+        .then(data => {
+          renderTabelKelas(data);
+          showLoading(false);
+        })
+        .catch(err => {
+          console.error(err);
+          alert("Gagal mengambil data dari Google Apps Script.");
+          showLoading(false);
         });
     }
+  }
 
-    function renderHasilRekap(data, tipe, target) {
-      let html = "";
-
-      if (tipe === "siswa") {
-        html += `<h5>Rekap Presensi Siswa (ID: ${target})</h5>`;
-        html += `<table class="table table-bordered mt-3">
-          <thead class="table-light"><tr><th>Tanggal</th><th>Status</th><th>Jam Absen</th></tr></thead>
-          <tbody>`;
-        if(data.length === 0) {
-          html += `<tr><td colspan="3" class="text-center text-muted">Tidak ada data.</td></tr>`;
-        } else {
-          data.forEach(d => {
-            html += `<tr><td>${d.tanggal}</td><td>${d.status}</td><td>${d.jam}</td></tr>`;
-          });
-        }
-        html += `</tbody></table>`;
-      } else {
-        html += `<h5>Rekap Presensi Kelas ${target}</h5>`;
-        html += `<table class="table table-bordered mt-3">
-          <thead class="table-light">
-            <tr>
-              <th>No</th><th>Nama Siswa</th><th>Tidak Terlambat</th><th>Terlambat</th><th>Bolos</th><th>Total Records</th>
-            </tr>
-          </thead><tbody>`;
-        if(data.length === 0) {
-          html += `<tr><td colspan="6" class="text-center text-muted">Tidak ada data.</td></tr>`;
-        } else {
-          data.forEach((d, idx) => {
-            html += `<tr>
-              <td>${idx + 1}</td>
-              <td>${d.nama}</td>
-              <td class="text-success fw-bold">${d.tidakTerlambat}</td>
-              <td class="text-warning fw-bold">${d.terlambat}</td>
-              <td class="text-danger fw-bold">${d.bolos}</td>
-              <td>${d.total}</td>
-            </tr>`;
-          });
-        }
-        html += `</tbody></table>`;
-      }
-
-      document.getElementById("hasilRekap").innerHTML = html;
+  // RENDER TABEL SISWA
+  function renderTabelSiswa(data) {
+    if (!data || data.length === 0) {
+      document.getElementById("tabelRekap").innerHTML = `<tbody><tr><td class="text-center py-4 text-muted">Tidak ada data absensi pada rentang tanggal tersebut (atau hari libur/akhir pekan).</td></tr></tbody>`;
+      return;
     }
-  </script>
+
+    var html = `<thead class="table-dark">
+      <tr>
+        <th class="text-center" style="width: 10%;">No</th>
+        <th class="text-center">Tanggal</th>
+        <th class="text-center">Jam Absen</th>
+        <th class="text-center">Status</th>
+      </tr>
+    </thead><tbody>`;
+
+    data.forEach((row, index) => {
+      var badgeClass = row.status === 'Bolos' ? 'bg-danger' : 'bg-success';
+      html += `<tr>
+        <td class="text-center">${index + 1}</td>
+        <td class="text-center">${row.tanggal}</td>
+        <td class="text-center">${row.jam}</td>
+        <td class="text-center"><span class="badge ${badgeClass}">${row.status}</span></td>
+      </tr>`;
+    });
+
+    html += `</tbody>`;
+    document.getElementById("tabelRekap").innerHTML = html;
+  }
+
+  // RENDER TABEL KELAS
+  function renderTabelKelas(data) {
+    if (!data || data.length === 0) {
+      document.getElementById("tabelRekap").innerHTML = `<tbody><tr><td class="text-center py-4 text-muted">Tidak ada data siswa untuk kelas ini.</td></tr></tbody>`;
+      return;
+    }
+
+    var html = `<thead class="table-dark">
+      <tr>
+        <th class="text-center" style="width: 8%;">No</th>
+        <th>Nama Siswa</th>
+        <th class="text-center">Tidak Terlambat</th>
+        <th class="text-center">Terlambat</th>
+        <th class="text-center">Bolos</th>
+      </tr>
+    </thead><tbody>`;
+
+    data.forEach((row, index) => {
+      html += `<tr>
+        <td class="text-center">${index + 1}</td>
+        <td>${row.nama}</td>
+        <td class="text-center"><span class="badge bg-success">${row.tidakTerlambat} Kali</span></td>
+        <td class="text-center"><span class="badge bg-warning text-dark">${row.terlambat} Kali</span></td>
+        <td class="text-center"><span class="badge bg-danger">${row.bolos} Kali</span></td>
+      </tr>`;
+    });
+
+    html += `</tbody>`;
+    document.getElementById("tabelRekap").innerHTML = html;
+  }
+</script>
+
 </body>
 </html>
