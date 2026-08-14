@@ -35,14 +35,8 @@
     </ul>
   </div>
 
-  <!-- SETUP URL WEB APP -->
-  <div class="card card-custom p-3 mb-4 no-print border">
-    <label class="form-label fw-bold text-secondary mb-1" style="font-size: 13px;">🔗 URL Web App Google Apps Script:</label>
-    <div class="input-group input-group-sm">
-      <input type="text" id="webAppUrl" class="form-control" placeholder="https://script.google.com/macros/s/AKfycbwrlB-R1zkZB1cXMFtSK7hY_vFpVFgYS8tMZFn1XDc5sDqiuFHjbuiJprC2vfsnwEaK/exec">
-      <button onclick="simpanUrlScript()" class="btn btn-outline-primary">Simpan URL</button>
-    </div>
-  </div>
+  <!-- INPUT URL SCRIPT (DISEMBUNYIKAN / BACKGROUND ONLY) -->
+  <input type="hidden" id="webAppUrl" value="https://script.google.com/macros/s/AKfycbwrlB-R1zkZB1cXMFtSK7hY_vFpVFgYS8tMZFn1XDc5sDqiuFHjbuiJprC2vfsnwEaK/exec">
 
   <!-- ========================================== -->
   <!-- HALAMAN 1: ABSENSI KELAS & DAFTAR SISWA   -->
@@ -152,20 +146,8 @@
     document.getElementById("tglMulai").value = today;
     document.getElementById("tglSelesai").value = today;
 
-    var defaultUrl = "https://script.google.com/macros/s/AKfycbwrIB-R1zkZB1cXMFtSK7hY_vFpVFgYS8tMZFn1XDc5sDqiuFHjbuiJprC2vfsnwEaK/exec";
-    var savedUrl = localStorage.getItem("APPS_SCRIPT_URL") || defaultUrl;
-    document.getElementById("webAppUrl").value = savedUrl;
-
     renderTombolKelas();
   });
-
-  function simpanUrlScript() {
-    var url = document.getElementById("webAppUrl").value.trim();
-    if (url) {
-      localStorage.setItem("APPS_SCRIPT_URL", url);
-      alert("URL Apps Script berhasil disimpan!");
-    }
-  }
 
   function renderTombolKelas() {
     var container = document.getElementById("container-kelas");
@@ -174,14 +156,12 @@
     selectRekap.innerHTML = "";
 
     daftarDaftarKelas.forEach(kelas => {
-      // Button Halaman Utama
       var btn = document.createElement("button");
       btn.className = "btn btn-outline-primary btn-kelas px-4 py-3";
       btn.innerHTML = "🏫 Kelas " + kelas;
       btn.onclick = function() { bukaKelas(kelas); };
       container.appendChild(btn);
 
-      // Select Option Rekap
       var opt = document.createElement("option");
       opt.value = kelas;
       opt.innerText = "Kelas " + kelas;
@@ -205,7 +185,6 @@
 
   function bukaKelas(kelas) {
     var scriptUrl = document.getElementById("webAppUrl").value.trim();
-    if (!scriptUrl) { alert("Harap isi URL Google Apps Script!"); return; }
 
     currentKelas = kelas;
     document.getElementById("judulKelas").innerText = "Daftar Siswa Kelas " + kelas;
@@ -221,7 +200,7 @@
       })
       .catch(err => {
         showLoading(false);
-        alert("Gagal mengambil daftar siswa. Pastikan Sheet 'Data_Siswa' tersedia.");
+        alert("Gagal mengambil daftar siswa. Pastikan Sheet 'Siswa' tersedia.");
       });
   }
 
@@ -320,7 +299,7 @@
         .then(data => {
           showLoading(false);
           var html = `<thead class="table-dark"><tr><th class="text-center">No</th><th class="text-center">Tanggal</th><th class="text-center">Jam</th><th class="text-center">Status</th></tr></thead><tbody>`;
-          if(data.length === 0) { html += `<tr><td colspan="4" class="text-center py-3">Tidak ada data.</td></tr>`; }
+          if(!data || data.length === 0) { html += `<tr><td colspan="4" class="text-center py-3">Tidak ada data.</td></tr>`; }
           else {
             data.forEach((row, i) => {
               var badge = row.status === 'Bolos' ? 'bg-danger' : (row.status === 'Terlambat' ? 'bg-warning text-dark' : 'bg-success');
@@ -338,7 +317,7 @@
         .then(data => {
           showLoading(false);
           var html = `<thead class="table-dark"><tr><th class="text-center">No</th><th>Nama Siswa</th><th class="text-center">Tepat Waktu</th><th class="text-center">Terlambat</th><th class="text-center">Bolos</th></tr></thead><tbody>`;
-          if(data.length === 0) { html += `<tr><td colspan="5" class="text-center py-3">Tidak ada data.</td></tr>`; }
+          if(!data || data.length === 0) { html += `<tr><td colspan="5" class="text-center py-3">Tidak ada data.</td></tr>`; }
           else {
             data.forEach((row, i) => {
               html += `<tr><td class="text-center">${i+1}</td><td>${row.nama}</td><td class="text-center"><span class="badge bg-success">${row.tidakTerlambat}</span></td><td class="text-center"><span class="badge bg-warning text-dark">${row.terlambat}</span></td><td class="text-center"><span class="badge bg-danger">${row.bolos}</span></td></tr>`;
