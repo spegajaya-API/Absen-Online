@@ -4,330 +4,276 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sistem Absensi Digital</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  
+  <!-- Bootstrap 5 CSS & Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
   <style>
-    body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    .card-custom { background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); border: none; }
-    .btn-kelas { font-size: 1.2rem; font-weight: bold; padding: 15px 25px; border-radius: 10px; }
-    .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.85); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; }
-    @media print { .no-print { display: none !important; } body { background-color: #fff; } }
+    * {
+      font-family: 'Poppins', sans-serif;
+    }
+    body {
+      background-color: #f4f6f9;
+      color: #333;
+    }
+    .navbar-brand {
+      font-weight: 700;
+      color: #0d6efd !important;
+    }
+    .card-custom {
+      border: none;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      background: #ffffff;
+    }
+    .btn-kelas {
+      border-radius: 12px;
+      padding: 15px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      background: #ffffff;
+      border: 2px solid #e9ecef;
+      color: #495057;
+    }
+    .btn-kelas:hover {
+      border-color: #0d6efd;
+      color: #0d6efd;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(13, 110, 253, 0.15);
+    }
+    .table thead {
+      background-color: #1e293b;
+      color: #ffffff;
+    }
+    .table th {
+      font-weight: 600;
+      border: none;
+    }
+    
+    /* ANIMASI SPINNER MINI UNTUK TOMBOL */
+    .btn-loading {
+      position: relative;
+      pointer-events: none; /* Mencegah klik ganda saat proses */
+      opacity: 0.8;
+    }
+    .spinner-mini {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid #ffffff;
+      border-radius: 50%;
+      border-top-color: transparent;
+      animation: spin 0.6s linear infinite;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
 
-<div id="loading" class="loading-overlay">
-  <div class="spinner-border text-primary" role="status"></div>
-  <span class="mt-2 fw-bold text-secondary" id="loadingText">Memproses...</span>
-</div>
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-white py-3 shadow-sm">
+    <div class="container">
+      <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+        <span class="fs-3">🏫</span>
+        <span>Sistem Absensi Digital</span>
+      </a>
+      <div class="d-flex gap-2">
+        <button class="btn btn-primary rounded-pill px-3 fw-semibold" onclick="showSection('pilihanKelas')">
+          <i class="bi bi-pencil-square me-1"></i> Absensi Kelas
+        </button>
+        <button class="btn btn-outline-secondary rounded-pill px-3 fw-semibold" onclick="showSection('rekapData')">
+          <i class="bi bi-bar-chart-line me-1"></i> Rekap Data
+        </button>
+      </div>
+    </div>
+  </nav>
 
-<div class="container my-4">
+  <div class="container py-4">
 
-  <!-- NAVBAR NAVIGASI -->
-  <div class="d-flex justify-content-between align-items-center mb-4 no-print flex-wrap gap-2">
-    <h3 class="fw-bold text-primary m-0">🏫 Sistem Absensi Digital</h3>
-    <ul class="nav nav-pills" id="mainTab">
-      <li class="nav-item">
-        <button class="nav-link active fw-bold" id="tab-absen" onclick="switchTab('absen')">📝 Absensi Kelas</button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link fw-bold" id="tab-rekap" onclick="switchTab('rekap')">📊 Rekap Data</button>
-      </li>
-    </ul>
-  </div>
-
-  <!-- INPUT URL SCRIPT (DISEMBUNYIKAN / BACKGROUND ONLY) -->
-  <input type="hidden" id="webAppUrl" value="https://script.google.com/macros/s/AKfycbwrlB-R1zkZB1cXMFtSK7hY_vFpVFgYS8tMZFn1XDc5sDqiuFHjbuiJprC2vfsnwEaK/exec">
-
-  <!-- ========================================== -->
-  <!-- HALAMAN 1: ABSENSI KELAS & DAFTAR SISWA   -->
-  <!-- ========================================== -->
-  <div id="page-absen">
-    
-    <!-- TAMPILAN 1: PILIHAN KELAS -->
-    <div id="section-pilih-kelas" class="card card-custom p-4 mb-4">
-      <h4 class="fw-bold text-dark mb-3">Pilih Kelas</h4>
-      <p class="text-muted">Klik salah satu kelas di bawah ini untuk menampilkan daftar siswa:</p>
-      <div id="container-kelas" class="d-flex flex-wrap gap-3 mt-2">
-        <!-- Generasi Tombol Kelas via JavaScript -->
+    <!-- SECTION 1: PILIHAN KELAS -->
+    <div id="secPilihanKelas" class="section-view">
+      <div class="card card-custom p-4 mb-4">
+        <h4 class="fw-bold mb-3"><i class="bi bi-grid-3x3-gap-fill text-primary me-2"></i>Pilih Kelas</h4>
+        <p class="text-muted">Pilih kelas untuk mulai melakukan absensi siswa hari ini.</p>
+        <div class="row g-3" id="containerDaftarKelas">
+          <!-- Daftar kelas akan dimuat secara dinamis atau statis -->
+          <div class="col-6 col-md-4 col-lg-3"><button class="btn btn-kelas w-100" onclick="bukaKelas('7A')">Kelas 7A</button></div>
+          <div class="col-6 col-md-4 col-lg-3"><button class="btn btn-kelas w-100" onclick="bukaKelas('7B')">Kelas 7B</button></div>
+          <div class="col-6 col-md-4 col-lg-3"><button class="btn btn-kelas w-100" onclick="bukaKelas('8A')">Kelas 8A</button></div>
+          <div class="col-6 col-md-4 col-lg-3"><button class="btn btn-kelas w-100" onclick="bukaKelas('8B')">Kelas 8B</button></div>
+        </div>
       </div>
     </div>
 
-    <!-- TAMPILAN 2: DAFTAR SISWA DALAM KELAS -->
-    <div id="section-daftar-siswa" class="card card-custom p-4 mb-4" style="display: none;">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="fw-bold text-primary m-0" id="judulKelas">Daftar Siswa Kelas --</h4>
-        <button onclick="kembaliKePilihKelas()" class="btn btn-secondary btn-sm fw-bold">⬅️ Kembali ke Pilihan Kelas</button>
-      </div>
-      <hr class="mt-0 mb-3">
-
-      <div class="table-responsive">
-        <table class="table table-hover align-middle">
-          <thead class="table-dark">
-            <tr>
-              <th class="text-center" style="width: 8%;">No</th>
-              <th>Nama Siswa</th>
-              <th>No. WA Wali</th>
-              <th class="text-center" style="width: 25%;">Aksi Absen</th>
-            </tr>
-          </thead>
-          <tbody id="tbodySiswa">
-            <!-- Data siswa akan dirender di sini -->
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- ========================================== -->
-  <!-- HALAMAN 2: REKAP ABSENSI                   -->
-  <!-- ========================================== -->
-  <div id="page-rekap" style="display: none;">
-    <div class="card card-custom p-4 mb-4 no-print">
-      <h4 class="fw-bold text-primary mb-3">📊 Rekapitulasi Absensi</h4>
-      <div class="row g-3">
-        <div class="col-md-3">
-          <label class="form-label fw-bold">Jenis Rekap</label>
-          <select id="jenisRekap" class="form-select" onchange="toggleFilterRekap()">
-            <option value="siswa">Per Siswa</option>
-            <option value="kelas">Per Kelas</option>
-          </select>
-        </div>
-        <div class="col-md-3" id="boxSiswa">
-          <label class="form-label fw-bold">Nama Siswa</label>
-          <input type="text" id="inputNamaSiswa" class="form-control" placeholder="Nama siswa">
-        </div>
-        <div class="col-md-3" id="boxKelas" style="display:none;">
-          <label class="form-label fw-bold">Pilih Kelas</label>
-          <select id="selectKelasRekap" class="form-select"></select>
-        </div>
-        <div class="col-md-3">
-          <label class="form-label fw-bold">Dari Tanggal</label>
-          <input type="date" id="tglMulai" class="form-control">
-        </div>
-        <div class="col-md-3">
-          <label class="form-label fw-bold">Sampai Tanggal</label>
-          <input type="date" id="tglSelesai" class="form-control">
-        </div>
-      </div>
-      <div class="mt-4 d-flex gap-2">
-        <button onclick="prosesRekap()" class="btn btn-primary px-4">🔍 Tampilkan Data</button>
-        <button onclick="window.print()" class="btn btn-danger px-4">📄 Cetak / Download PDF</button>
-      </div>
-    </div>
-
-    <!-- TABEL HASIL REKAP -->
-    <div class="card card-custom p-4 bg-white">
-      <div class="text-center mb-4">
-        <h3 class="fw-bold mb-1 text-uppercase">Laporan Rekapitulasi Absensi</h3>
-        <p id="subHeaderLaporan" class="text-muted mb-0">Silakan pilih filter dan klik Tampilkan Data</p>
-      </div>
-      <div class="table-responsive">
-        <table class="table table-bordered align-middle" id="tabelRekap">
-          <thead class="table-dark">
-            <tr><th class="text-center">Informasi</th></tr>
-          </thead>
-          <tbody>
-            <tr><td class="text-center text-muted py-4">Belum ada data dimuat.</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-</div>
-
-<script>
-  var daftarDaftarKelas = ["7A", "7B", "8A", "8B", "9A", "9B"];
-  var currentKelas = "";
-
-  document.addEventListener("DOMContentLoaded", function() {
-    var today = new Date().toISOString().split('T')[0];
-    document.getElementById("tglMulai").value = today;
-    document.getElementById("tglSelesai").value = today;
-
-    renderTombolKelas();
-  });
-
-  function renderTombolKelas() {
-    var container = document.getElementById("container-kelas");
-    var selectRekap = document.getElementById("selectKelasRekap");
-    container.innerHTML = "";
-    selectRekap.innerHTML = "";
-
-    daftarDaftarKelas.forEach(kelas => {
-      var btn = document.createElement("button");
-      btn.className = "btn btn-outline-primary btn-kelas px-4 py-3";
-      btn.innerHTML = "🏫 Kelas " + kelas;
-      btn.onclick = function() { bukaKelas(kelas); };
-      container.appendChild(btn);
-
-      var opt = document.createElement("option");
-      opt.value = kelas;
-      opt.innerText = "Kelas " + kelas;
-      selectRekap.appendChild(opt);
-    });
-  }
-
-  function switchTab(tab) {
-    if (tab === 'absen') {
-      document.getElementById("page-absen").style.display = "block";
-      document.getElementById("page-rekap").style.display = "none";
-      document.getElementById("tab-absen").classList.add("active");
-      document.getElementById("tab-rekap").classList.remove("active");
-    } else {
-      document.getElementById("page-absen").style.display = "none";
-      document.getElementById("page-rekap").style.display = "block";
-      document.getElementById("tab-absen").classList.remove("active");
-      document.getElementById("tab-rekap").classList.add("active");
-    }
-  }
-
-  function bukaKelas(kelas) {
-    var scriptUrl = document.getElementById("webAppUrl").value.trim();
-
-    currentKelas = kelas;
-    document.getElementById("judulKelas").innerText = "Daftar Siswa Kelas " + kelas;
-    showLoading(true, "Memuat daftar siswa...");
-
-    fetch(`${scriptUrl}?action=getSiswaByKelas&kelas=${encodeURIComponent(kelas)}`)
-      .then(res => res.json())
-      .then(data => {
-        showLoading(false);
-        document.getElementById("section-pilih-kelas").style.display = "none";
-        document.getElementById("section-daftar-siswa").style.display = "block";
-        renderTabelSiswaKelas(data);
-      })
-      .catch(err => {
-        showLoading(false);
-        alert("Gagal mengambil daftar siswa. Pastikan Sheet 'Siswa' tersedia.");
-      });
-  }
-
-  function kembaliKePilihKelas() {
-    document.getElementById("section-daftar-siswa").style.display = "none";
-    document.getElementById("section-pilih-kelas").style.display = "block";
-  }
-
-  function renderTabelSiswaKelas(siswaArr) {
-    var tbody = document.getElementById("tbodySiswa");
-    tbody.innerHTML = "";
-
-    if (!siswaArr || siswaArr.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-4">Belum ada siswa terdaftar di Kelas ${currentKelas}.</td></tr>`;
-      return;
-    }
-
-    siswaArr.forEach((siswa, idx) => {
-      var tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td class="text-center">${idx + 1}</td>
-        <td class="fw-bold">${siswa.nama}</td>
-        <td>${siswa.nomorHP || '-'}</td>
-        <td class="text-center">
-          <button id="btn-absen-${idx}" class="btn btn-success btn-sm px-3 fw-bold" onclick="eksekusiAbsen('${siswa.nama}', '${siswa.nomorHP}', ${idx})">
-            📲 Absen Sekarang
+    <!-- SECTION 2: DAFTAR SISWA KELAS (ABSENSI) -->
+    <div id="secDaftarSiswa" class="section-view d-none">
+      <div class="card card-custom p-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+          <div>
+            <h4 class="fw-bold m-0" id="judulKelas">Daftar Siswa</h4>
+            <small class="text-muted">Klik tombol "Absen" pada nama siswa secara berurutan.</small>
+          </div>
+          <button class="btn btn-secondary rounded-pill px-3" onclick="showSection('pilihanKelas')">
+            <i class="bi bi-arrow-left me-1"></i> Kembali ke Pilihan Kelas
           </button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
+        </div>
 
-  function eksekusiAbsen(nama, nomorHP, indexBtn) {
-    var scriptUrl = document.getElementById("webAppUrl").value.trim();
-    var btn = document.getElementById(`btn-absen-${indexBtn}`);
-    
-    showLoading(true, "Mencatat absensi & mengirim WA...");
+        <!-- Filter Pencarian Siswa -->
+        <div class="mb-3">
+          <div class="input-group">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" id="cariSiswaInput" class="form-control border-start-0" placeholder="Cari nama siswa..." onkeyup="filterSiswa()">
+          </div>
+        </div>
 
-    var payload = {
-      action: "simpanAbsenOtomatis",
-      nama: nama,
-      kelas: currentKelas,
-      nomorHP: nomorHP
-    };
+        <!-- Tabel Daftar Siswa -->
+        <div class="table-responsive rounded-3 border">
+          <table class="table table-hover align-middle m-0">
+            <thead>
+              <tr>
+                <th class="text-center" style="width: 80px;">No</th>
+                <th>Nama Siswa</th>
+                <th>No. WA Wali</th>
+                <th class="text-center" style="width: 200px;">Aksi Absen</th>
+              </tr>
+            </thead>
+            <tbody id="tabelSiswaBody">
+              <!-- Data siswa diproses via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
 
-    fetch(scriptUrl, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    })
-    .then(() => {
-      showLoading(false);
-      btn.className = "btn btn-secondary btn-sm px-3 disabled";
-      btn.innerText = "✅ Sudah Absen";
-      btn.disabled = true;
-      alert(`Absensi untuk ${nama} berhasil dicatat & WA terkirim!`);
-    })
-    .catch(err => {
-      showLoading(false);
-      alert("Gagal mencatat absensi.");
-    });
-  }
+    <!-- SECTION 3: REKAP DATA -->
+    <div id="secRekapData" class="section-view d-none">
+      <div class="card card-custom p-4">
+        <h4 class="fw-bold mb-3"><i class="bi bi-file-earmark-bar-graph text-primary me-2"></i>Rekap Absensi</h4>
+        <p class="text-muted">Fitur rekapitulasi data kehadiran siswa.</p>
+        <!-- Konten Rekap Kamu Bisa Ditaruh Di Sini -->
+      </div>
+    </div>
 
-  function toggleFilterRekap() {
-    var jenis = document.getElementById("jenisRekap").value;
-    if (jenis === "siswa") {
-      document.getElementById("boxSiswa").style.display = "block";
-      document.getElementById("boxKelas").style.display = "none";
-    } else {
-      document.getElementById("boxSiswa").style.display = "none";
-      document.getElementById("boxKelas").style.display = "block";
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // URL Deployment Apps Script Kamu
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwrlB-R1zkZB1cXMFtSK7hY_vFpVFgYS8tMZFn1XDc5sDqiuFHjbuiJprC2vfsnwEaK/exec";
+
+    var currentDataSiswa = [];
+
+    // Fungsi Navigasi Halaman Halaman (SPA)
+    function showSection(sectionName) {
+      document.querySelectorAll('.section-view').forEach(el => el.classList.add('d-none'));
+      if (sectionName === 'pilihanKelas') {
+        document.getElementById('secPilihanKelas').classList.remove('d-none');
+      } else if (sectionName === 'daftarSiswa') {
+        document.getElementById('secDaftarSiswa').classList.remove('d-none');
+      } else if (sectionName === 'rekapData') {
+        document.getElementById('secRekapData').classList.remove('d-none');
+      }
     }
-  }
 
-  function showLoading(show, text = "Memproses...") {
-    document.getElementById("loadingText").innerText = text;
-    document.getElementById("loading").style.display = show ? "flex" : "none";
-  }
+    // Fungsi Membuka Kelas & Fetch Siswa dari Apps Script
+    function bukaKelas(namaKelas) {
+      document.getElementById('judulKelas').innerText = "Daftar Siswa " + namaKelas;
+      showSection('daftarSiswa');
+      
+      var tbody = document.getElementById("tabelSiswaBody");
+      tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span> Memuat data siswa...</td></tr>`;
 
-  function prosesRekap() {
-    var scriptUrl = document.getElementById("webAppUrl").value.trim();
-    var jenis = document.getElementById("jenisRekap").value;
-    var tglMulai = document.getElementById("tglMulai").value;
-    var tglSelesai = document.getElementById("tglSelesai").value;
-
-    showLoading(true, "Mengambil data rekap...");
-
-    if (jenis === "siswa") {
-      var nama = document.getElementById("inputNamaSiswa").value.trim();
-      document.getElementById("subHeaderLaporan").innerText = `Rekap Per Siswa: ${nama} (${tglMulai} s.d ${tglSelesai})`;
-
-      fetch(`${scriptUrl}?action=getRekapSiswa&nama=${encodeURIComponent(nama)}&tglMulai=${tglMulai}&tglSelesai=${tglSelesai}`)
-        .then(res => res.json())
+      fetch(`${SCRIPT_URL}?action=getSiswaByKelas&kelas=${encodeURIComponent(namaKelas)}`)
+        .then(response => response.json())
         .then(data => {
-          showLoading(false);
-          var html = `<thead class="table-dark"><tr><th class="text-center">No</th><th class="text-center">Tanggal</th><th class="text-center">Jam</th><th class="text-center">Status</th></tr></thead><tbody>`;
-          if(!data || data.length === 0) { html += `<tr><td colspan="4" class="text-center py-3">Tidak ada data.</td></tr>`; }
-          else {
-            data.forEach((row, i) => {
-              var badge = row.status === 'Bolos' ? 'bg-danger' : (row.status === 'Terlambat' ? 'bg-warning text-dark' : 'bg-success');
-              html += `<tr><td class="text-center">${i+1}</td><td class="text-center">${row.tanggal}</td><td class="text-center">${row.jam}</td><td class="text-center"><span class="badge ${badge}">${row.status}</span></td></tr>`;
-            });
-          }
-          document.getElementById("tabelRekap").innerHTML = html + `</tbody>`;
-        });
-    } else {
-      var kelas = document.getElementById("selectKelasRekap").value;
-      document.getElementById("subHeaderLaporan").innerText = `Rekap Per Kelas: ${kelas} (${tglMulai} s.d ${tglSelesai})`;
-
-      fetch(`${scriptUrl}?action=getRekapKelas&kelas=${encodeURIComponent(kelas)}&tglMulai=${tglMulai}&tglSelesai=${tglSelesai}`)
-        .then(res => res.json())
-        .then(data => {
-          showLoading(false);
-          var html = `<thead class="table-dark"><tr><th class="text-center">No</th><th>Nama Siswa</th><th class="text-center">Tepat Waktu</th><th class="text-center">Terlambat</th><th class="text-center">Bolos</th></tr></thead><tbody>`;
-          if(!data || data.length === 0) { html += `<tr><td colspan="5" class="text-center py-3">Tidak ada data.</td></tr>`; }
-          else {
-            data.forEach((row, i) => {
-              html += `<tr><td class="text-center">${i+1}</td><td>${row.nama}</td><td class="text-center"><span class="badge bg-success">${row.tidakTerlambat}</span></td><td class="text-center"><span class="badge bg-warning text-dark">${row.terlambat}</span></td><td class="text-center"><span class="badge bg-danger">${row.bolos}</span></td></tr>`;
-            });
-          }
-          document.getElementById("tabelRekap").innerHTML = html + `</tbody>`;
+          currentDataSiswa = data;
+          renderDaftarSiswa(currentDataSiswa);
+        })
+        .catch(err => {
+          console.error(err);
+          tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-danger">Gagal memuat data siswa. Pastikan URL Apps Script sudah benar.</td></tr>`;
         });
     }
-  }
-</script>
 
+    // Render Tabel Daftar Siswa
+    function renderDaftarSiswa(daftar) {
+      var tbody = document.getElementById("tabelSiswaBody");
+      tbody.innerHTML = "";
+
+      if (!daftar || daftar.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-muted">Belum ada siswa terdaftar di kelas ini.</td></tr>`;
+        return;
+      }
+
+      daftar.forEach(function (siswa, index) {
+        var row = document.createElement("tr");
+        row.innerHTML = `
+          <td class="text-center fw-semibold">${index + 1}</td>
+          <td class="fw-semibold">${siswa.nama}</td>
+          <td>${siswa.nomorHP || '-'}</td>
+          <td class="text-center" id="action-cell-${index}">
+            <button class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm" onclick="absenSiswa('${siswa.nama}', '${siswa.kelas}', '${siswa.nomorHP}', ${index}, this)">
+              <i class="bi bi-check-circle me-1"></i> Absen
+            </button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    // FUNGSI UTAMA: Absen Cepat Tanpa Reload Halaman
+    function absenSiswa(nama, kelas, nomorHP, index, btnElement) {
+      // 1. Kunci tombol dan ganti tampilan ke indikator loading mini secara instant
+      var originalHTML = btnElement.innerHTML;
+      btnElement.classList.add("btn-loading");
+      btnElement.disabled = true;
+      btnElement.innerHTML = `<span class="spinner-mini"></span> Menyimpan...`;
+
+      // 2. Kirim data ke Google Apps Script di background (Asynchronous)
+      fetch(SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          action: "simpanAbsenOtomatis",
+          nama: nama,
+          kelas: kelas,
+          nomorHP: nomorHP
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        // 3. Setelah sukses, langsung ubah tombol menjadi Badge Status Kehadiran
+        var cell = document.getElementById(`action-cell-${index}`);
+        if (data.status === "Tepat Waktu") {
+          cell.innerHTML = `<span class="badge bg-success-subtle text-success border border-success px-3 py-2 rounded-pill"><i class="bi bi-check-lg me-1"></i> Tepat Waktu</span>`;
+        } else {
+          cell.innerHTML = `<span class="badge bg-warning-subtle text-warning border border-warning px-3 py-2 rounded-pill"><i class="bi bi-exclamation-triangle me-1"></i> Terlambat</span>`;
+        }
+      })
+      .catch(error => {
+        console.error("Error:", error);
+        // Jika koneksi gagal, kembalikan tombol ke kondisi awal agar bisa diklik lagi
+        btnElement.classList.remove("btn-loading");
+        btnElement.disabled = false;
+        btnElement.innerHTML = originalHTML;
+        alert("Gagal mencatat absensi " + nama + ". Silakan periksa koneksi dan coba lagi.");
+      });
+    }
+
+    // Filter Cari Siswa
+    function filterSiswa() {
+      var query = document.getElementById("cariSiswaInput").value.toLowerCase();
+      var filtered = currentDataSiswa.filter(function(siswa) {
+        return siswa.nama.toLowerCase().includes(query);
+      });
+      renderDaftarSiswa(filtered);
+    }
+  </script>
 </body>
 </html>
