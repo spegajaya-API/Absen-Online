@@ -112,7 +112,7 @@
 
   <div class="container py-4">
 
-    <!-- SECTION 1: PILIHAN KELAS (HANYA 7A, 8A, 8B, 9A, 9B) -->
+    <!-- SECTION 1: PILIHAN KELAS (7A, 8A, 8B, 9A, 9B) -->
     <div id="secPilihanKelas" class="section-view">
       <div class="card card-custom p-4 mb-4">
         <h4 class="fw-bold mb-3"><i class="bi bi-grid-3x3-gap-fill text-primary me-2"></i>Pilih Kelas</h4>
@@ -172,24 +172,37 @@
       <div class="card card-custom p-4 mb-4">
         <h4 class="fw-bold mb-3"><i class="bi bi-file-earmark-bar-graph text-primary me-2"></i>Rekap Absensi</h4>
         
-        <!-- Tab Mode Rekap (Bisa Diklik & Responsif) -->
+        <!-- Tab Mode Rekap -->
         <div class="d-flex gap-2 mb-4 bg-light p-1 rounded-pill style="width: fit-content;">
           <button class="tab-btn active" id="btnTabSiswa" onclick="switchRekapTab('siswa')">Rekap Per Siswa</button>
           <button class="tab-btn" id="btnTabKelas" onclick="switchRekapTab('kelas')">Rekap Per Kelas</button>
         </div>
 
-        <!-- TAB 1: REKAP PER SISWA -->
+        <!-- TAB 1: REKAP PER SISWA (DIPERBAIKI: DROPDOWN KELAS & NAMA) -->
         <div id="tabContentSiswa">
           <div class="row g-3 mb-3">
-            <div class="col-md-4">
-              <label class="form-label fw-semibold">Nama Siswa</label>
-              <input type="text" id="rekapNamaSiswa" class="form-control" placeholder="Masukkan Nama Lengkap">
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">Pilih Kelas</label>
+              <select id="rekapPilihKelasSiswa" class="form-select" onchange="loadSiswaByKelasForRekap()">
+                <option value="">-- Pilih Kelas --</option>
+                <option value="7A">Kelas 7A</option>
+                <option value="8A">Kelas 8A</option>
+                <option value="8B">Kelas 8B</option>
+                <option value="9A">Kelas 9A</option>
+                <option value="9B">Kelas 9B</option>
+              </select>
             </div>
             <div class="col-md-3">
+              <label class="form-label fw-semibold">Nama Siswa</label>
+              <select id="rekapNamaSiswa" class="form-select">
+                <option value="">-- Pilih Kelas Terlebih Dahulu --</option>
+              </select>
+            </div>
+            <div class="col-md-2">
               <label class="form-label fw-semibold">Tanggal Mulai</label>
               <input type="date" id="rekapTglMulaiSiswa" class="form-control">
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
               <label class="form-label fw-semibold">Tanggal Selesai</label>
               <input type="date" id="rekapTglSelesaiSiswa" class="form-control">
             </div>
@@ -209,7 +222,7 @@
                 </tr>
               </thead>
               <tbody id="tabelRekapSiswaBody">
-                <tr><td colspan="4" class="text-center py-4 text-muted">Silakan isi nama & periode tanggal di atas.</td></tr>
+                <tr><td colspan="4" class="text-center py-4 text-muted">Silakan pilih kelas, nama siswa, & periode tanggal di atas.</td></tr>
               </tbody>
             </table>
           </div>
@@ -298,7 +311,7 @@
       }
     }
 
-    // Membuka Kelas & Fetch Siswa
+    // Membuka Kelas & Fetch Siswa (Absensi)
     function bukaKelas(namaKelas) {
       document.getElementById('judulKelas').innerText = "Daftar Siswa Kelas " + namaKelas;
       showSection('daftarSiswa');
@@ -388,6 +401,36 @@
       renderDaftarSiswa(filtered);
     }
 
+    // FUNGSI MEMUAT NAMA SISWA BERDASARKAN KELAS UNTUK REKAP
+    function loadSiswaByKelasForRekap() {
+      var kelas = document.getElementById("rekapPilihKelasSiswa").value;
+      var selectNama = document.getElementById("rekapNamaSiswa");
+
+      selectNama.innerHTML = `<option value="">-- Memuat Siswa... --</option>`;
+
+      if (!kelas) {
+        selectNama.innerHTML = `<option value="">-- Pilih Kelas Terlebih Dahulu --</option>`;
+        return;
+      }
+
+      fetch(`${SCRIPT_URL}?action=getSiswaByKelas&kelas=${encodeURIComponent(kelas)}`)
+        .then(res => res.json())
+        .then(data => {
+          selectNama.innerHTML = `<option value="">-- Pilih Nama Siswa --</option>`;
+          if (!data || data.length === 0) {
+            selectNama.innerHTML = `<option value="">-- Tidak ada siswa di kelas ini --</option>`;
+            return;
+          }
+          data.forEach(siswa => {
+            selectNama.innerHTML += `<option value="${siswa.nama}">${siswa.nama}</option>`;
+          });
+        })
+        .catch(err => {
+          console.error(err);
+          selectNama.innerHTML = `<option value="">-- Gagal memuat nama --</option>`;
+        });
+    }
+
     // FUNGSI LOGIC REKAP PER SISWA
     function tampilkanRekapSiswa() {
       var nama = document.getElementById("rekapNamaSiswa").value;
@@ -395,7 +438,7 @@
       var tglSelesai = document.getElementById("rekapTglSelesaiSiswa").value;
 
       if (!nama || !tglMulai || !tglSelesai) {
-        alert("Harap lengkapi Nama, Tanggal Mulai, dan Tanggal Selesai!");
+        alert("Harap lengkapi Kelas, Nama Siswa, Tanggal Mulai, dan Tanggal Selesai!");
         return;
       }
 
