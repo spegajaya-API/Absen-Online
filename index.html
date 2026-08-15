@@ -26,7 +26,6 @@
     <div id="sectionPilihKelas" class="card shadow-sm p-4">
       <h3 class="mb-3 text-secondary">Pilih Kelas</h3>
       <div id="daftarKelasContainer" class="row g-3">
-        <!-- Tombol kelas akan dimuat di sini secara dinamis -->
         <div class="text-center py-3 text-muted">Memuat daftar kelas...</div>
       </div>
     </div>
@@ -62,7 +61,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     // Ganti dengan URL Web App Google Apps Script kamu
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwrlB-R1zkZB1cXMFtSK7hY_vFpVFgYS8tMZFn1XDc5sDqiuFHjbuiJprC2vfsnwEaK/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwrlB-R1zkZB1cXMFtSK7hY_vFpVFgYS8tMZFn1XDc5sDqiuFHjbuiJprC2vfsnwEaK/exec"; // <- Masukkan URL GAS kamu di sini
 
     let activeKelasGlobal = "";
     let currentDataSiswa = [];
@@ -92,20 +91,22 @@
 
     async function loadDaftarKelas() {
       const container = document.getElementById('daftarKelasContainer');
+      container.innerHTML = `<div class="col-12 text-center py-3 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Memuat daftar kelas...</div>`;
+      
       try {
         const res = await fetch(`${SCRIPT_URL}?action=getKelas`);
         const kelasList = await res.json();
         
         container.innerHTML = "";
-        if (kelasList.length === 0) {
-          container.innerHTML = `<div class="col-12 text-muted">Tidak ada data kelas.</div>`;
+        if (!kelasList || kelasList.length === 0) {
+          container.innerHTML = `<div class="col-12 text-muted text-center">Tidak ada data kelas.</div>`;
           return;
         }
 
         kelasList.forEach(kelas => {
           container.innerHTML += `
             <div class="col-md-4">
-              <div class="card border-primary h-100 shadow-sm cursor-pointer" onclick="bukaKelas('${kelas}')" style="cursor: pointer;">
+              <div class="card border-primary h-100 shadow-sm" onclick="bukaKelas('${kelas}')" style="cursor: pointer;">
                 <div class="card-body text-center py-4">
                   <h4 class="card-title text-primary mb-0"><i class="bi bi-door-open me-2"></i>Kelas ${kelas}</h4>
                 </div>
@@ -114,7 +115,7 @@
           `;
         });
       } catch (err) {
-        container.innerHTML = `<div class="col-12 text-danger">Gagal memuat daftar kelas.</div>`;
+        container.innerHTML = `<div class="col-12 text-danger text-center">Gagal memuat daftar kelas. Pastikan URL SCRIPT_URL sudah benar dan Apps Script sudah di-deploy ulang.</div>`;
       }
     }
 
@@ -127,22 +128,22 @@
       tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span> Memuat data...</td></tr>`;
       
       try {
-        // 1. Cek status libur hari ini terlebih dahulu
+        // Cek status libur hari ini terlebih dahulu
         const todayStr = getTodayString();
         const resLibur = await fetch(`${SCRIPT_URL}?action=cekLibur&tanggal=${todayStr}`);
         const dataLibur = await resLibur.json();
 
         if (dataLibur.status) {
           tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>Absensi dikunci karena hari ini libur: ${dataLibur.keterangan}</td></tr>`;
-          return; // Hentikan proses render tombol jika libur
+          return;
         }
 
-        // 2. Jika tidak libur, muat data siswa dan render tombol aksi
+        // Jika tidak libur, muat data siswa
         const resSiswa = await fetch(`${SCRIPT_URL}?action=getSiswaByKelas&kelas=${encodeURIComponent(namaKelas)}`);
         currentDataSiswa = await resSiswa.json();
         renderDaftarSiswa(currentDataSiswa);
       } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-danger">Gagal memuat data.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-danger">Gagal memuat data siswa.</td></tr>`;
       }
     }
 
@@ -150,7 +151,7 @@
       const tbody = document.getElementById("tabelSiswaBody");
       tbody.innerHTML = "";
 
-      if (dataSiswa.length === 0) {
+      if (!dataSiswa || dataSiswa.length === 0) {
         tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-muted">Tidak ada siswa di kelas ini.</td></tr>`;
         return;
       }
