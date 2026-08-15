@@ -53,7 +53,6 @@
       border: none;
     }
     
-    /* ANIMASI SPINNER MINI TOMBOL ABSEN */
     .btn-loading {
       position: relative;
       pointer-events: none;
@@ -74,7 +73,6 @@
       to { transform: rotate(360deg); }
     }
 
-    /* CUSTOM TAB REKAP */
     .tab-btn {
       border: none;
       background: transparent;
@@ -89,7 +87,6 @@
       color: #ffffff;
     }
 
-    /* PENGATURAN CETAK / PRINT PDF */
     @media print {
       body * {
         visibility: hidden;
@@ -154,14 +151,13 @@
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
           <div>
             <h4 class="fw-bold m-0" id="judulKelas">Daftar Siswa</h4>
-            <small class="text-muted">Klik tombol "Absen" pada nama siswa secara berurutan.</small>
+            <small class="text-muted">Status absen tersinkronisasi otomatis dari database pusat.</small>
           </div>
           <button class="btn btn-secondary rounded-pill px-3" onclick="showSection('pilihanKelas')">
             <i class="bi bi-arrow-left me-1"></i> Kembali ke Pilihan Kelas
           </button>
         </div>
 
-        <!-- Filter Pencarian Siswa -->
         <div class="mb-3">
           <div class="input-group">
             <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
@@ -169,7 +165,6 @@
           </div>
         </div>
 
-        <!-- Tabel Daftar Siswa -->
         <div class="table-responsive rounded-3 border">
           <table class="table table-hover align-middle m-0">
             <thead>
@@ -193,7 +188,6 @@
       <div class="card card-custom p-4 mb-4">
         <h4 class="fw-bold mb-3"><i class="bi bi-file-earmark-bar-graph text-primary me-2"></i>Rekap Absensi</h4>
         
-        <!-- Tab Mode Rekap -->
         <div class="d-flex gap-2 mb-4 bg-light p-1 rounded-pill" style="width: fit-content;">
           <button class="tab-btn active" id="btnTabSiswa" onclick="switchRekapTab('siswa')">Rekap Per Siswa</button>
           <button class="tab-btn" id="btnTabKelas" onclick="switchRekapTab('kelas')">Rekap Per Kelas</button>
@@ -275,7 +269,6 @@
             </div>
           </div>
 
-          <!-- TOMBOL AKSI TAMBAHAN (PRINT & KIRIM WA) -->
           <div class="d-flex justify-content-end gap-2 mb-3">
             <button class="btn btn-outline-danger fw-semibold rounded-pill px-3" onclick="printRekapPDF()">
               <i class="bi bi-file-earmark-pdf me-1"></i> Cetak / PDF
@@ -285,37 +278,30 @@
             </button>
           </div>
 
-          <!-- AREA TABEL DAN SURAT PENGANTAR UNTUK CETAK/PDF -->
           <div class="table-responsive rounded-3 border mt-3 p-3 bg-white" id="areaCetakRekap">
-            
-            <!-- SURAT PENGANTAR (Hanya tampil saat dicetak/print) -->
             <div id="suratPengantarPDF" class="d-none mb-4">
               <div class="text-center border-bottom pb-3 mb-3">
-                <h5 class="fw-bold m-0">UPT SMP NEGERI 3 SUTOJAYAN</h5>
+                <h5 class="fw-bold m-0">PEMERINTAH KABUPATEN BLITAR</h5>
                 <h4 class="fw-bold m-0 text-uppercase">Laporan Rekapitulasi Kehadiran Siswa</h4>
                 <p class="text-muted small m-0" id="infoPeriodeCetak"></p>
               </div>
               
               <div class="mb-3" style="font-size: 0.95rem; line-height: 1.6; color: #333;">
                 <p class="mb-2">Kepada Yth.<br><strong>Bapak/Ibu Wali Murid</strong><br>di Tempat</p>
-                
                 <p class="mb-2"><em>Assalamu'alaikum warahmatullahi wabarakatuh,</em><br>Salam sejahtera bagi kita semua,</p>
-                
                 <p class="text-justify mb-2">
                   Melalui laporan ini, pihak sekolah menyampaikan rekapitulasi tingkat kehadiran putra/putri Bapak/Ibu selama periode belajar yang tertera di bawah ini. Informasi ini kami sediakan sebagai bentuk transparansi dan sarana pemantauan bersama terhadap kedisiplinan serta kelancaran proses kegiatan belajar mengajar di sekolah.
                 </p>
-                
                 <p class="text-justify mb-3">
                   Kami sangat mengharapkan dukungan, perhatian, serta kerja sama aktif dari Bapak/Ibu sekalian di rumah, guna memotivasi Ananda agar senantiasa hadir tepat waktu dan mengikuti pembelajaran dengan baik. Keberhasilan pendidikan anak-anak kita tentu tidak lepas dari sinergi yang erat antara pihak sekolah dan keluarga.
                 </p>
-                
                 <p class="mb-4">Atas perhatian, waktu, dan kerja sama yang baik dari Bapak/Ibu sekalian, kami ucapkan terima kasih.</p>
                 
                 <div class="d-flex justify-content-end">
                   <div class="text-center" style="min-width: 200px;">
                     <p class="mb-1">Hormat Kami,</p>
-                    <p class="fw-bold mb-5">Wakasek Kurikulum UPT SMP Negeri 3 Sutojayan</p>
-                    <p class="fw-semibold m-0">( AZIZAH, S.Pd. )</p>
+                    <p class="fw-bold mb-5">Pihak Sekolah / Guru Kelas</p>
+                    <p class="fw-semibold m-0">( ........................................ )</p>
                   </div>
                 </div>
               </div>
@@ -348,21 +334,19 @@
 
   <!-- JAVASCRIPT LOGIC -->
   <script>
-    // PASTE URL DEPLOYMENT APPS SCRIPT KAMU DI SINI
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwrlB-R1zkZB1cXMFtSK7hY_vFpVFgYS8tMZFn1XDc5sDqiuFHjbuiJprC2vfsnwEaK/exec"; 
 
     var currentDataSiswa = [];
     var lastRekapDataKelas = [];
+    var activeKelasGlobal = "";
 
     function getTodayString() {
       var d = new Date();
       var month = '' + (d.getMonth() + 1);
       var day = '' + d.getDate();
       var year = d.getFullYear();
-
       if (month.length < 2) month = '0' + month;
       if (day.length < 2) day = '0' + day;
-
       return [year, month, day].join('-');
     }
 
@@ -391,26 +375,41 @@
       }
     }
 
-    function bukaKelas(namaKelas) {
+    // Ambil data status absen hari ini dari Google Sheets (Sinkronisasi Multi-User)
+    async function getAbsenHariIni() {
+      var todayStr = getTodayString();
+      try {
+        var response = await fetch(`${SCRIPT_URL}?action=getAbsenHariIni&tanggal=${todayStr}`);
+        var data = await response.json();
+        return data; // Format: { "Nama Siswa": "Tepat Waktu" / "Terlambat" }
+      } catch (err) {
+        console.error("Gagal sinkronisasi status absen:", err);
+        return {};
+      }
+    }
+
+    async function bukaKelas(namaKelas) {
+      activeKelasGlobal = namaKelas;
       document.getElementById('judulKelas').innerText = "Daftar Siswa Kelas " + namaKelas;
       showSection('daftarSiswa');
       
       var tbody = document.getElementById("tabelSiswaBody");
-      tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span> Memuat data siswa...</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span> Memuat data siswa & sinkronisasi status...</td></tr>`;
 
-      fetch(`${SCRIPT_URL}?action=getSiswaByKelas&kelas=${encodeURIComponent(namaKelas)}`)
-        .then(response => response.json())
-        .then(data => {
-          currentDataSiswa = data;
-          renderDaftarSiswa(currentDataSiswa);
-        })
-        .catch(err => {
-          console.error(err);
-          tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-danger">Gagal memuat data siswa. Pastikan URL Apps Script sudah benar.</td></tr>`;
-        });
+      try {
+        // Ambil data siswa & status server secara bersamaan
+        var resSiswa = await fetch(`${SCRIPT_URL}?action=getSiswaByKelas&kelas=${encodeURIComponent(namaKelas)}`);
+        var dataSiswa = await resSiswa.json();
+        
+        currentDataSiswa = dataSiswa;
+        await renderDaftarSiswa(currentDataSiswa);
+      } catch (err) {
+        console.error(err);
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-danger">Gagal memuat data. Periksa koneksi internet Anda.</td></tr>`;
+      }
     }
 
-    function renderDaftarSiswa(daftar) {
+    async function renderDaftarSiswa(daftar) {
       var tbody = document.getElementById("tabelSiswaBody");
       tbody.innerHTML = "";
 
@@ -419,23 +418,23 @@
         return;
       }
 
-      var todayStr = getTodayString();
+      // Tarik status absen terbaru dari database pusat (Google Sheets)
+      var statusServer = await getAbsenHariIni();
 
       daftar.forEach(function (siswa, index) {
         var row = document.createElement("tr");
-        var storageKey = `absen_${todayStr}_${siswa.nama}`;
-        var savedStatus = localStorage.getItem(storageKey);
+        var status = statusServer[siswa.nama]; // Cek apakah siswa sudah absen hari ini di server
 
         var actionHtml = "";
-        if (savedStatus === "Tepat Waktu") {
+        if (status === "Tepat Waktu") {
           actionHtml = `<span class="badge bg-success-subtle text-success border border-success px-3 py-2 rounded-pill"><i class="bi bi-check-lg me-1"></i> Tepat Waktu</span>`;
-        } else if (savedStatus === "Terlambat") {
+        } else if (status === "Terlambat") {
           actionHtml = `<span class="badge bg-warning-subtle text-warning border border-warning px-3 py-2 rounded-pill"><i class="bi bi-exclamation-triangle me-1"></i> Terlambat</span>`;
-        } else if (savedStatus === "Bolos") {
+        } else if (status === "Bolos") {
           actionHtml = `<span class="badge bg-danger-subtle text-danger border border-danger px-3 py-2 rounded-pill"><i class="bi bi-x-circle me-1"></i> Bolos</span>`;
         } else {
           actionHtml = `
-            <button class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm" onclick="absenSiswa('${siswa.nama}', '${siswa.kelas}', '${siswa.nomorHP}', ${index}, this)">
+            <button class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm" onclick="absenSiswa('${siswa.id || ''}', '${siswa.nama}', '${siswa.kelas}', '${siswa.nomorHP}', ${index}, this)">
               <i class="bi bi-check-circle me-1"></i> Absen
             </button>
           `;
@@ -453,7 +452,7 @@
       });
     }
 
-    function absenSiswa(nama, kelas, nomorHP, index, btnElement) {
+    function absenSiswa(id, nama, kelas, nomorHP, index, btnElement) {
       var originalHTML = btnElement.innerHTML;
       btnElement.classList.add("btn-loading");
       btnElement.disabled = true;
@@ -464,6 +463,7 @@
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({
           action: "simpanAbsenOtomatis",
+          id: id,
           nama: nama,
           kelas: kelas,
           nomorHP: nomorHP
@@ -472,14 +472,9 @@
       .then(response => response.json())
       .then(data => {
         var cell = document.getElementById(`action-cell-${index}`);
-        var todayStr = getTodayString();
-        var storageKey = `absen_${todayStr}_${nama}`;
-
         if (data.status === "Tepat Waktu") {
-          localStorage.setItem(storageKey, "Tepat Waktu");
           cell.innerHTML = `<span class="badge bg-success-subtle text-success border border-success px-3 py-2 rounded-pill"><i class="bi bi-check-lg me-1"></i> Tepat Waktu</span>`;
         } else {
-          localStorage.setItem(storageKey, "Terlambat");
           cell.innerHTML = `<span class="badge bg-warning-subtle text-warning border border-warning px-3 py-2 rounded-pill"><i class="bi bi-exclamation-triangle me-1"></i> Terlambat</span>`;
         }
       })
@@ -488,7 +483,7 @@
         btnElement.classList.remove("btn-loading");
         btnElement.disabled = false;
         btnElement.innerHTML = originalHTML;
-        alert("Gagal mencatat absensi " + nama + ". Silakan periksa koneksi dan coba lagi.");
+        alert("Gagal mencatat absensi " + nama + ". Silakan coba lagi.");
       });
     }
 
@@ -503,7 +498,6 @@
     function loadSiswaByKelasForRekap() {
       var kelas = document.getElementById("rekapPilihKelasSiswa").value;
       var selectNama = document.getElementById("rekapNamaSiswa");
-
       selectNama.innerHTML = `<option value="">-- Memuat Siswa... --</option>`;
 
       if (!kelas) {
@@ -522,10 +516,6 @@
           data.forEach(siswa => {
             selectNama.innerHTML += `<option value="${siswa.nama}">${siswa.nama}</option>`;
           });
-        })
-        .catch(err => {
-          console.error(err);
-          selectNama.innerHTML = `<option value="">-- Gagal memuat nama --</option>`;
         });
     }
 
@@ -535,19 +525,19 @@
       var tglSelesai = document.getElementById("rekapTglSelesaiSiswa").value;
 
       if (!nama || !tglMulai || !tglSelesai) {
-        alert("Harap lengkapi Kelas, Nama Siswa, Tanggal Mulai, dan Tanggal Selesai!");
+        alert("Harap lengkapi pilihan Nama Siswa dan Periode Tanggal!");
         return;
       }
 
       var tbody = document.getElementById("tabelRekapSiswaBody");
-      tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span> Memuat data rekap...</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span> Memuat rekap...</td></tr>`;
 
       fetch(`${SCRIPT_URL}?action=getRekapSiswa&nama=${encodeURIComponent(nama)}&tglMulai=${tglMulai}&tglSelesai=${tglSelesai}`)
         .then(res => res.json())
         .then(data => {
           tbody.innerHTML = "";
           if (!data || data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-muted">Tidak ada data absensi untuk nama ini pada periode tersebut.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-muted">Tidak ada data absensi untuk periode tersebut.</td></tr>`;
             return;
           }
           data.forEach((row, idx) => {
@@ -574,7 +564,7 @@
       }
 
       var tbody = document.getElementById("tabelRekapKelasBody");
-      tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span> Memuat data rekap...</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span> Memuat rekap kelas...</td></tr>`;
 
       fetch(`${SCRIPT_URL}?action=getRekapKelas&kelas=${encodeURIComponent(kelas)}&tglMulai=${tglMulai}&tglSelesai=${tglSelesai}`)
         .then(res => res.json())
@@ -600,7 +590,7 @@
 
     function printRekapPDF() {
       if (!lastRekapDataKelas || lastRekapDataKelas.length === 0) {
-        alert("Belum ada data rekap yang ditampilkan. Silakan klik tombol 'Cari' terlebih dahulu.");
+        alert("Belum ada data rekap yang ditampilkan. Klik tombol 'Cari' terlebih dahulu.");
         return;
       }
       
@@ -628,11 +618,11 @@
       var tglMulai = document.getElementById("rekapTglMulaiKelas").value;
       var tglSelesai = document.getElementById("rekapTglSelesaiKelas").value;
 
-      if (!confirm(`Apakah Anda yakin ingin mengirim rekap periode ${tglMulai} s/d ${tglSelesai} ke seluruh wali murid Kelas ${kelas}?`)) {
+      if (!confirm(`Kirim rekap periode ${tglMulai} s/d ${tglSelesai} ke seluruh wali murid Kelas ${kelas}?`)) {
         return;
       }
 
-      alert("Fitur pengiriman rekap massal sedang diproses. Pastikan nomor HP wali murid sudah terdaftar di sheet Siswa.");
+      alert("Fitur pengiriman rekap massal sedang diproses.");
     }
   </script>
 </body>
